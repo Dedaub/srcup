@@ -30,6 +30,14 @@ framework, `srcup` should be able to successfully infer the correct framework.
 4. The CLI tool will compile and upload the artifacts to Watchdog. This might take a while. Upon completion, a
 Watchdog project URL will be provided.
 
+## A note regarding the layout of the project
+Right now, `srcup` assumes that the project to be uploaded has the default file layout of the underlying build system. Until the tool provides the ability to override the default paths,
+one might need to momentarily use the default layout of the specified build system for the uploading process to work seamlessly.
+
+### Build-system-specific notes
+- The layout of a `hardhat` project should be inferred automatically by the tool. This is done via an invokation to `hardhat`'s console (the default output directory is `artifacts`)
+- The output directory of a `foundry` project should be `out` (default directory)
+- The output directory of a `truffle` project should be `build/contracts` (default directory)
 
 ## Storing the API key
 
