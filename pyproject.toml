@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "srcup"
+version = "0.1.0"
+description = ""
+authors = ["Tony Rocco Valentine <tvalentine@dedaub.com>", "Ilias Tsatiris <ilias@dedaub.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+crytic-compile = "^0.3.1"
+typer = {extras = ["all"], version = "^0.7.0"}
+eth-hash = {extras = ["pycryptodome"], version = "^0.5.1"}
+python-dotenv = "^0.21.0"
+pydantic = "^1.10.4"
+aiohttp = "^3.8.4"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^0.991"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+srcup = "srcup.__main__:main"
+
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"

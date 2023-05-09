@@ -1,0 +1,10 @@
+**/.env
+**/*.egg-info/**
+.idea/**
+**/venv/**
+**/build/**
+**/dist/**
+**/info/**
+**/__pycache__/**
+**/.vscode/**
+*/venv/
