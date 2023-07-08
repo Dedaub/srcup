@@ -15,16 +15,17 @@ CLI tool is run in an isolated/clean environment.
 ## Usage
 
 The following steps assumes you've acquired/generated a Watchdog API key. This can be done from your Watchdog
-profile page.
+profile page (top right corner of the UI, top right button in the header of that page).
 
 To upload the sources of a project:
 1. Go to the project's root directory
 2. **Important**: Make sure the project dependencies have already been setup. This is typicially done by running
 `npm install`, `yarn install` or similar -- this step can vary from project to project, depending on the package
 manager being used.
-3. Run `srcup --api-key <api_key> --framework <project_framework>`. It should be noted that while the framework
+3. Run `srcup --api-key <api_key> --framework <project_framework>`. (See "Storing the API key" later in this doc, 
+which will simplify the command in future runs.) Note that, while the `framework`
 parameter is optional, it can help guide the CLI tool. There are cases where multiple build tools/frameworks are
-present in a project (e.g. Hardhat for building and Foundry for testing/fuzzing) which can confuse our tool. In
+present in a project (e.g., Hardhat for building and Foundry for testing/fuzzing) which can confuse our tool. In
 any case, the framework parameter refers to the tool used to **build** the project. If your project only uses one
 framework, `srcup` should be able to successfully infer the correct framework.
 4. The CLI tool will compile and upload the artifacts to Watchdog. This might take a while. Upon completion, a
