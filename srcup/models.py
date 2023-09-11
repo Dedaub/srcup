@@ -50,7 +50,7 @@ class ContractSource(BaseModel):
     array_source_names: list[str]
     source_map: str
     json_abi: list[dict]
-    array_selectors: list[HexBytes]
+    array_function_selectors: list[HexBytes]
     array_event_selectors: list[HexBytes]
     array_error_selectors: list[HexBytes]
 
