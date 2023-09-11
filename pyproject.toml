@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "srcup"
-version = "0.2.1"
+version = "0.2.2"
 description = ""
 authors = ["Tony Rocco Valentine <tvalentine@dedaub.com>", "Ilias Tsatiris <ilias@dedaub.com>"]
 readme = "README.md"
@@ -12,7 +12,7 @@ typer = {extras = ["all"], version = "^0.7.0"}
 eth-hash = {extras = ["pycryptodome"], version = "^0.5.1"}
 python-dotenv = "^0.21.0"
 pydantic = "^1.10.4"
-aiohttp = "^3.8.4"
+aiohttp = "^3.8.5"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^0.991"
