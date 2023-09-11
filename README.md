@@ -13,7 +13,7 @@ CLI tool is run in an isolated/clean environment.
 4. [Optional] Install the CLI completions: `srcup --install-completion`
 
 
-## Updating
+## Upgrading
 
 ### For pipx installation
 ```bash
