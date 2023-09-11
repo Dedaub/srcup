@@ -12,6 +12,19 @@ CLI tool is run in an isolated/clean environment.
 3. Test the installation: `srcup --help`
 4. [Optional] Install the CLI completions: `srcup --install-completion`
 
+
+## Updating
+
+### For pipx installation
+```bash
+pipx upgrade srcup
+```
+
+### For plain pip installation
+```bash
+pip install --upgrade srcup
+```
+
 ## Usage
 
 The following steps assumes you've acquired/generated a Watchdog API key. This can be done from your Watchdog
