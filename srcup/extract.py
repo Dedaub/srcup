@@ -107,7 +107,7 @@ def process(artifact: CryticCompile) -> list[tuple[ContractSource, ContractBytec
                     md5_bytecode=HexBytes(md5_bytecode),
                     source_map=";".join(remapped_srcmap),
                     json_abi=cast(list[dict], source_unit.abi(contract_name)),
-                    array_selectors=[
+                    array_function_selectors=[
                         HexBytes(keccak(construct_signature(abi).encode())[:4])
                         for abi in source_unit.abi(contract_name)
                         if abi["type"] == "function"
