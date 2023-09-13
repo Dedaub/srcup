@@ -22,7 +22,7 @@ pipx upgrade srcup
 
 ### For plain pip installation
 ```bash
-pip install --upgrade srcup
+pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup
 ```
 
 ## Usage
