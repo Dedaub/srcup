@@ -1,9 +1,11 @@
+import re
 from datetime import datetime
 from enum import Enum
 
 from typing import Any, Callable, Generator
 
-from pydantic import BaseModel, errors
+from pydantic import BaseModel, errors, ConstrainedStr
+
 
 def hex_bytes_validator(val: Any) -> bytes:
     if isinstance(val, bytes):
@@ -20,6 +22,8 @@ class HexBytes(bytes):
     def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
         yield hex_bytes_validator
 
+class HexString(ConstrainedStr):
+    regex = re.compile("^(0x)?[0-9A-Fa-f]{2,}$")
 
 class BuildSystem(Enum):
     # ARCHIVE = "Archive"
