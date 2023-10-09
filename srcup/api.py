@@ -3,14 +3,16 @@
 import aiohttp
 from pydantic import BaseModel
 
-from srcup.models import ContractBytecode, ContractSource
+from srcup.models import ContractBytecode, ContractSource, HexString
 
 
 async def create_project(
     watchdog_api: str,
     api_key: str,
+    name: str,
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
+    git_hash: HexString
 ) -> int:
     class Payload(BaseModel):
         class Config:
@@ -18,6 +20,8 @@ async def create_project(
 
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
+        name: str
+        git_hash: HexString
 
     async with aiohttp.ClientSession(
         headers={"x-api-key": api_key}, json_serialize=lambda x: x.json()
@@ -25,7 +29,7 @@ async def create_project(
         print("Uploading...")
         req = await session.post(
             url=f"{watchdog_api}/on_demand/project/new",
-            json=Payload(sources=sources, bytecode=bytecode),
+            json=Payload(sources=sources, bytecode=bytecode, name=name, git_hash=git_hash),
         )
 
         if req.status == 200:
