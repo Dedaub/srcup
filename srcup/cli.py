@@ -17,7 +17,7 @@ from subprocess import Popen, PIPE
 from hashlib import sha1
 
 app = typer.Typer()
-builtins.print = rich.print  # , type: ignore
+builtins.print = rich.print  # type: ignore
 
 
 @app.command()
