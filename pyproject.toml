@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "srcup"
-version = "0.2.2"
+version = "0.3.0"
 description = ""
 authors = ["Tony Rocco Valentine <tvalentine@dedaub.com>", "Ilias Tsatiris <ilias@dedaub.com>"]
 readme = "README.md"
