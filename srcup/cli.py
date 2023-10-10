@@ -55,9 +55,8 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str, name: str
         bytecode_hashes = b"".join([item.codehash for item in bytecodes])
         git_hash = sha1(bytecode_hashes).hexdigest()
 
-    if name is None or not name:
-        path = pathlib.PurePath(target)
-        name = path.name
+    if not name:
+        name = pathlib.Path(target).resolve().name
 
     try:
         project_id = await create_project(
