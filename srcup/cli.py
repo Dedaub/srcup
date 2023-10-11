@@ -11,6 +11,7 @@ from crytic_compile.crytic_compile import CryticCompile
 from srcup.build import compile_build
 from srcup.api import create_project
 from srcup.extract import process
+import pathlib
 
 from srcup.models import BuildSystem, ContractBytecode, ContractSource, HexBytes
 from subprocess import Popen, PIPE
@@ -53,6 +54,9 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str, name: str
     if git_hash == '':
         bytecode_hashes = b"".join([item.codehash for item in bytecodes])
         git_hash = sha1(bytecode_hashes).hexdigest()
+
+    if not name:
+        name = pathlib.Path(target).resolve().name
 
     try:
         project_id = await create_project(
