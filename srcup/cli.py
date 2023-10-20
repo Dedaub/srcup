@@ -68,7 +68,7 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str, name: str
             git_hash
         )
         print(
-            f"Successfully project #{project_id}: https://watchdog.dedaub.com/projects/{project_id}"
+            f"Successfully created project #{project_id}: https://watchdog.dedaub.com/projects/{project_id}"
         )
     except Exception as e:
         print(type(e))
