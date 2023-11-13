@@ -26,18 +26,20 @@ def single(
     target: str = typer.Argument(...),
     framework: Optional[BuildSystem] = typer.Option(None),
     cache: bool = typer.Option(False, help="Use build cache"),
+    init: bool = typer.Option(False, help="Is this a new project?"),
     api_url: str = typer.Option(
         "https://api.dedaub.com/api",
         help="URL of the Watchdog API"
     ),
     api_key: str = typer.Option(..., envvar="WD_API_KEY", help="Watchdog API key"),
-    name: str = typer.Option('', help="Project name")
+    name: str = typer.Option('', help="Project name"),
+    comment: str = typer.Option('', help="Comment for the project")
 ):
     build, *_ = compile_build(target, framework, cache, "lzma")
-    asyncio.run(asingle(build, api_url, api_key, name, target))
+    asyncio.run(asingle(build, api_url, api_key, init, name, comment, target))
 
 
-async def asingle(artifact: CryticCompile, api_url: str, api_key: str, name: str, target: str):
+async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bool, name: str, comment: str, target: str):
     contracts = process(artifact)
 
     sources, bytecodes = cast(
@@ -62,7 +64,9 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str, name: str
         project_id = await create_project(
             api_url,
             api_key,
+            init,
             name,
+            comment,
             sources,
             bytecodes,
             git_hash
