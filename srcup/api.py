@@ -32,7 +32,7 @@ async def create_project(
         headers={"x-api-key": api_key}, json_serialize=lambda x: x.json()
     ) as session:
         print("Uploading...")
-        if init is True:
+        if init:
             url = f"{watchdog_api}/project/"
         else:
             url = f"{watchdog_api}/project/version/"
