@@ -32,14 +32,15 @@ def single(
         help="URL of the Watchdog API"
     ),
     api_key: str = typer.Option(..., envvar="WD_API_KEY", help="Watchdog API key"),
+    owner_username: str = typer.Option('', help="Username of project owner. Ignored when --init is also present"),
     name: str = typer.Option('', help="Project name"),
     comment: str = typer.Option('', help="Comment for the project")
 ):
     build, *_ = compile_build(target, framework, cache, "lzma")
-    asyncio.run(asingle(build, api_url, api_key, init, name, comment, target))
+    asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
 
 
-async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bool, name: str, comment: str, target: str):
+async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
     contracts = process(artifact)
 
     sources, bytecodes = cast(
@@ -65,6 +66,7 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
             api_url,
             api_key,
             init,
+            owner_username,
             name,
             comment,
             sources,
