@@ -9,7 +9,7 @@ import rich
 import typer
 from crytic_compile.crytic_compile import CryticCompile
 from srcup.build import compile_build
-from srcup.api import create_project
+from srcup.api import create_project, update_project
 from srcup.extract import process
 import pathlib
 
@@ -62,20 +62,25 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
         name = pathlib.Path(target).resolve().name
 
     try:
-        project_id = await create_project(
-            api_url,
-            api_key,
-            init,
-            owner_username,
-            name,
-            comment,
-            sources,
-            bytecodes,
-            git_hash
-        )
-        print(
-            f"Successfully created project #{project_id}: https://watchdog.dedaub.com/projects/{project_id}"
-        )
+        if init:
+            project_id = await create_project(
+                api_url,
+                api_key,
+                name,
+                comment,
+                sources,
+                bytecodes,
+                git_hash
+            )
+            print(
+                f"Successfully created project #{project_id}: https://watchdog.dedaub.com/projects/{project_id}"
+            )
+        else:
+            project_id, version_id = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, git_hash)
+            print(
+                f"Successfully updated project #{project_id} with new version {version_id}: https://watchdog.dedaub.com/projects/{project_id}"
+            )
+
     except Exception as e:
         print(type(e))
         print(e)
