@@ -68,7 +68,7 @@ async def update_project(
         print("Uploading...")
 
         project_id = await get_project_id(watchdog_api,api_key,owner_username,name)
-        url = f"{watchdog_api}/project/version/{project_id}"
+        url = f"{watchdog_api}/project/{project_id}/version"
 
         req = await session.post(
             url=url,
