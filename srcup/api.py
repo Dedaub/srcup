@@ -28,7 +28,7 @@ async def create_project(
     ) as session:
         print("Uploading...")
         req = await session.post(
-            url=f"{watchdog_api}/on_demand/project/new",
+            url=f"{watchdog_api}/project",
             json=Payload(sources=sources, bytecode=bytecode, name=name, git_hash=git_hash),
         )
 
