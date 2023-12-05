@@ -28,7 +28,7 @@ def single(
     cache: bool = typer.Option(False, help="Use build cache"),
     init: bool = typer.Option(False, help="Is this a new project?"),
     api_url: str = typer.Option(
-        "https://api.dedaub.com/api",
+         "https://api.dedaub.com/api",
         help="URL of the Watchdog API"
     ),
     api_key: str = typer.Option(..., envvar="WD_API_KEY", help="Watchdog API key"),
