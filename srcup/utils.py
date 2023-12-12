@@ -24,10 +24,9 @@ async def get_latest_app_version() -> str:
 
         req = await session.get(url=url)
 
-        data = await req.json()
-        version = data[0]['name']
-
         if req.status == 200:
+            data = await req.json()
+            version = data[0]['name']
             return re.sub('[^0-9.]', '', version)
         else:
             return ''
