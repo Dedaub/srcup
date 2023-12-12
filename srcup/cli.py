@@ -50,10 +50,9 @@ def single(
 
     latest_app_version = asyncio.run(get_latest_app_version())
     if not latest_app_version:
-        print("Error: Failed to retrieve the latest version of the app")
-        return
+        print("Warning: Failed to retrieve the latest available version of the app")
 
-    if version.parse(app_version) < version.parse(latest_app_version):
+    elif version.parse(app_version) < version.parse(latest_app_version):
         print(f'Warning: A new version is available ({latest_app_version})\n')
         print(f'Please, update the app to continue:')
         print(f'  For pipx installation run:      pipx upgrade srcup')
