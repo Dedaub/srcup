@@ -3,6 +3,7 @@
 
 import asyncio
 import builtins
+import sys
 from typing import Optional, cast
 
 import rich
@@ -28,7 +29,7 @@ def single(
     cache: bool = typer.Option(False, help="Use build cache"),
     init: bool = typer.Option(False, help="Is this a new project?"),
     api_url: str = typer.Option(
-         "https://api.dedaub.com/api",
+          "https://api.dedaub.com/api",
         help="URL of the Watchdog API"
     ),
     api_key: str = typer.Option(..., envvar="WD_API_KEY", help="Watchdog API key"),
@@ -38,7 +39,6 @@ def single(
 ):
     build, *_ = compile_build(target, framework, cache, "lzma")
     asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
-
 
 async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
     contracts = process(artifact)
@@ -52,9 +52,6 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
         git_hash = result[0].strip().decode("utf-8")
     except:
         #No git present?
-        git_hash = ''
-
-    if git_hash == '':
         bytecode_hashes = b"".join([item.codehash for item in bytecodes])
         git_hash = sha1(bytecode_hashes).hexdigest()
 
@@ -63,7 +60,7 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
 
     try:
         if init:
-            project_id = await create_project(
+            project_id, version_id = await create_project(
                 api_url,
                 api_key,
                 name,
@@ -73,14 +70,15 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
                 git_hash
             )
             print(
-                f"Successfully created project #{project_id}: https://watchdog.dedaub.com/projects/{project_id}"
+                f"Successfully created project #{project_id} with version {version_id}: https://watchdog.dedaub.com/projects/{project_id}"
             )
         else:
             project_id, version_id = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, git_hash)
             print(
                 f"Successfully updated project #{project_id} with new version {version_id}: https://watchdog.dedaub.com/projects/{project_id}"
             )
+        print(f"{project_id} {version_id}")
 
     except Exception as e:
-        print(type(e))
-        print(e)
+        print(f"Something went wrong with the project: {e}")
+        sys.exit(e)

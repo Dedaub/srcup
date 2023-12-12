@@ -29,6 +29,12 @@ async def create_project(
         headers={"x-api-key": api_key}, json_serialize=lambda x: x.json()
     ) as session:
         print("Uploading...")
+
+        project_id = await get_project_id(watchdog_api, api_key, name)
+
+        if project_id != -1:
+            raise Exception(f"Project with name {name} already exists")
+
         url = f"{watchdog_api}/project/"
 
         req = await session.post(
@@ -40,8 +46,8 @@ async def create_project(
             print("Done!")
             return await req.json()
         else:
-            print(await req.text())
-            raise Exception("Something went wrong while creating a new project")
+            error = await req.text()
+            raise Exception(error)
 
 
 async def update_project(
@@ -67,7 +73,10 @@ async def update_project(
     ) as session:
         print("Uploading...")
 
-        project_id = await get_project_id(watchdog_api,api_key,owner_username,name)
+        project_id = await get_project_id(watchdog_api,api_key, name, owner_username)
+        if project_id == -1:
+            raise Exception(f"No project with name {name} exists")
+
         url = f"{watchdog_api}/project/{project_id}/version"
 
         req = await session.post(
@@ -80,14 +89,14 @@ async def update_project(
             print(f"Updated project {project_id} with a new version: {version_id}!")
             return project_id, version_id
         else:
-            print(await req.text())
-            raise Exception("Something went wrong while updating project {project_id")
+            error = await req.text()
+            raise Exception(error)
 
 
 async def get_project_id(watchdog_api: str,
     api_key: str,
-    owner_username: str,
     name: str,
+    owner_username: str = '',
 ) -> int:
 
     async with aiohttp.ClientSession(
@@ -103,4 +112,4 @@ async def get_project_id(watchdog_api: str,
         if req.status == 200:
             return await req.json()
         else:
-            raise Exception("No project with name {name} exists")
+            return -1  # project does not exist
