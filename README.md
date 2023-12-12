@@ -49,7 +49,7 @@ name should be the same as in the initial version
 5. Commit messages can be added too, every time a new version is uploaded:
   * `srcup --api-key <api_key> --framework <project_framework>  --comment Message -name <project_name> <project location>`
 6. Projects can be shared too. If you want to upload a version of a project for which you have WRITE access you can do:
- * `srcup --api-key <api_key> --framework <project_framework>  --owner_username <username> -name <project_name> <project location>`
+ * `srcup --api-key <api_key> --framework <project_framework>  --owner_username <username> --name <project_name> <project location>`
 7. The CLI tool will compile and upload the artifacts to Watchdog. This might take a while. Upon completion, a
 Watchdog project URL will be provided.
 
