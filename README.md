@@ -35,7 +35,7 @@ To upload the sources of a project:
 2. **Important**: Make sure the project dependencies have already been setup. This is typically done by running
 `npm install`, `yarn install` or similar -- this step can vary from project to project, depending on the package
 manager being used.
-3. Run `srcup --api-key <api_key> --framework <project_framework> --init -name <project_name> <project location>`. (See "Storing the API key" later in this doc, 
+3. Run `srcup --api-key <api_key> --framework <project_framework> --init --name <project_name> <project location>`. (See "Storing the API key" later in this doc, 
 which will simplify the command in future runs.) Note that, while the `framework`
 parameter is optional, it can help guide the CLI tool. There are cases where multiple build tools/frameworks are
 present in a project (e.g., Hardhat for building and Foundry for testing/fuzzing) which can confuse our tool. In
@@ -44,10 +44,10 @@ framework, `srcup` should be able to successfully infer the correct framework.
   * `init` indicates that this is the initial version of your project: the first time you add the project to watchdog.
   * `name` is a name you can freely choose for your project
 4. Each project can have multiple versions. You can upload another version of the same project using a similar command:
- * `srcup --api-key <api_key> --framework <project_framework>  -name <project_name>` (note the absence of init). The project
+ * `srcup --api-key <api_key> --framework <project_framework>  --name <project_name>` (note the absence of init). The project
 name should be the same as in the initial version
 5. Commit messages can be added too, every time a new version is uploaded:
-  * `srcup --api-key <api_key> --framework <project_framework>  --comment Message -name <project_name> <project location>`
+  * `srcup --api-key <api_key> --framework <project_framework>  --comment Message --name <project_name> <project location>`
 6. Projects can be shared too. If you want to upload a version of a project for which you have WRITE access you can do:
  * `srcup --api-key <api_key> --framework <project_framework>  --owner_username <username> --name <project_name> <project location>`
 7. The CLI tool will compile and upload the artifacts to Watchdog. This might take a while. Upon completion, a
