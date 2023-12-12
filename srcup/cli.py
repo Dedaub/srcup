@@ -2,7 +2,6 @@
 
 import asyncio
 import builtins
-import importlib.metadata
 import pathlib
 import rich
 import typer
@@ -17,7 +16,7 @@ from srcup.api import create_project, update_project
 from srcup.build import compile_build
 from srcup.extract import process
 from srcup.models import BuildSystem, ContractBytecode, ContractSource, HexBytes
-from srcup.utils import get_latest_app_version
+from srcup.utils import get_latest_app_version, version_callback, __version__
 
 app = typer.Typer()
 builtins.print = rich.print  # type: ignore
@@ -25,7 +24,7 @@ builtins.print = rich.print  # type: ignore
 
 @app.command()
 def single(
-    target: str = typer.Argument('DEFAULT_ARGUMENT'),
+    target: str = typer.Argument(...),
     framework: Optional[BuildSystem] = typer.Option(None),
     cache: bool = typer.Option(False, help="Use build cache"),
     init: bool = typer.Option(False, help="Is this a new project?"),
@@ -37,22 +36,13 @@ def single(
     owner_username: str = typer.Option('', help="Username of project owner. Ignored when --init is also present"),
     name: str = typer.Option('', help="Project name"),
     comment: str = typer.Option('', help="Comment for the project"),
-    show_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app")
+    app_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app", is_eager=True, callback=version_callback)
 ):
-    if target == 'DEFAULT_ARGUMENT' and not show_version:
-        raise typer.BadParameter("Missing argument 'TARGET'")
-
-    app_version = importlib.metadata.version('srcup')
-
-    if show_version:
-        print(app_version)
-        return
-
     latest_app_version = asyncio.run(get_latest_app_version())
     if not latest_app_version:
         print("Warning: Failed to retrieve the latest available version of the app")
 
-    elif version.parse(app_version) < version.parse(latest_app_version):
+    elif version.parse(__version__) < version.parse(latest_app_version):
         print(f'Warning: A new version is available ({latest_app_version})\n')
         print(f'Please, update the app to continue:')
         print(f'  For pipx installation run:      pipx upgrade srcup')
