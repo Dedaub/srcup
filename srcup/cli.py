@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 
-
 import asyncio
 import builtins
-from typing import Optional, cast
-
+import importlib.metadata
+import pathlib
 import rich
 import typer
-from crytic_compile.crytic_compile import CryticCompile
-from srcup.build import compile_build
-from srcup.api import create_project, update_project
-from srcup.extract import process
-import pathlib
 
-from srcup.models import BuildSystem, ContractBytecode, ContractSource, HexBytes
-from subprocess import Popen, PIPE
+from crytic_compile.crytic_compile import CryticCompile
 from hashlib import sha1
+from packaging import version
+from subprocess import Popen, PIPE
+from typing import Optional, cast
+
+from srcup.api import create_project, update_project
+from srcup.build import compile_build
+from srcup.extract import process
+from srcup.models import BuildSystem, ContractBytecode, ContractSource, HexBytes
+from srcup.utils import get_latest_app_version
 
 app = typer.Typer()
 builtins.print = rich.print  # type: ignore
@@ -23,7 +25,7 @@ builtins.print = rich.print  # type: ignore
 
 @app.command()
 def single(
-    target: str = typer.Argument(...),
+    target: str = typer.Argument('DEFAULT_ARGUMENT'),
     framework: Optional[BuildSystem] = typer.Option(None),
     cache: bool = typer.Option(False, help="Use build cache"),
     init: bool = typer.Option(False, help="Is this a new project?"),
@@ -34,8 +36,30 @@ def single(
     api_key: str = typer.Option(..., envvar="WD_API_KEY", help="Watchdog API key"),
     owner_username: str = typer.Option('', help="Username of project owner. Ignored when --init is also present"),
     name: str = typer.Option('', help="Project name"),
-    comment: str = typer.Option('', help="Comment for the project")
+    comment: str = typer.Option('', help="Comment for the project"),
+    show_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app")
 ):
+    if target == 'DEFAULT_ARGUMENT' and not show_version:
+        raise typer.BadParameter("Missing argument 'TARGET'")
+
+    app_version = importlib.metadata.version('srcup')
+
+    if show_version:
+        print(app_version)
+        return
+
+    latest_app_version = asyncio.run(get_latest_app_version())
+    if not latest_app_version:
+        print("Error: Failed to retrieve the latest version of the app")
+        return
+
+    if version.parse(app_version) < version.parse(latest_app_version):
+        print(f'Warning: A new version is available ({latest_app_version})\n')
+        print(f'Please, update the app to continue:')
+        print(f'  For pipx installation run:      pipx upgrade srcup')
+        print(f'  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup')
+        return
+
     build, *_ = compile_build(target, framework, cache, "lzma")
     asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
 
