@@ -14,7 +14,7 @@ from srcup.api import create_project, update_project
 from srcup.extract import process
 import pathlib
 
-from srcup.models import BuildSystem, ContractBytecode, ContractSource, HexBytes
+from srcup.models import BuildSystem, ContractBytecode, ContractSource
 from subprocess import Popen, PIPE
 from hashlib import sha1
 
@@ -40,6 +40,7 @@ def single(
     build, *_ = compile_build(target, framework, cache, "lzma")
     asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
 
+
 async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
     contracts = process(artifact)
 
@@ -50,8 +51,8 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
         git_process = Popen(['git', '-C', target, 'rev-parse', 'HEAD'], shell=False, stdout=PIPE)
         result = git_process.communicate()
         git_hash = result[0].strip().decode("utf-8")
-    except:
-        #No git present?
+    except FileNotFoundError as error:
+        # No git present?
         bytecode_hashes = b"".join([item.codehash for item in bytecodes])
         git_hash = sha1(bytecode_hashes).hexdigest()
 
@@ -81,4 +82,4 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
 
     except Exception as e:
         print(f"Something went wrong with the project: {e}")
-        sys.exit(e)
+        sys.exit(-1)
