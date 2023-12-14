@@ -74,7 +74,7 @@ async def update_project(
         print("Uploading...")
 
         project_id = await get_project_id(watchdog_api,api_key, name, owner_username)
-        if project_id == -1:
+        if project_id is None:
             raise Exception(f"No project with name {name} exists")
 
         url = f"{watchdog_api}/project/{project_id}/version"
@@ -112,4 +112,4 @@ async def get_project_id(watchdog_api: str,
         if req.status == 200:
             return await req.json()
         else:
-            return -1  # project does not exist
+            return None  # project does not exist
