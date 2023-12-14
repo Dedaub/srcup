@@ -29,7 +29,13 @@ async def create_project(
         headers={"x-api-key": api_key}, json_serialize=lambda x: x.json()
     ) as session:
         print("Uploading...")
-        url = f"{watchdog_api}/project/"
+
+        project_id = await get_project_id(watchdog_api, api_key, name)
+
+        if project_id is not None:
+            raise Exception(f"Project with name {name} already exists")
+
+        url = f"{watchdog_api}/project"
 
         req = await session.post(
             url=url,
@@ -40,8 +46,8 @@ async def create_project(
             print("Done!")
             return await req.json()
         else:
-            print(await req.text())
-            raise Exception("Something went wrong while creating a new project")
+            error = await req.text()
+            raise Exception(error)
 
 
 async def update_project(
@@ -53,7 +59,7 @@ async def update_project(
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
     git_hash: HexString
-) -> int:
+) -> tuple[int, int]:
     class Payload(BaseModel):
         class Config:
             json_encoders = {bytes: lambda bs: bs.hex()}
@@ -67,7 +73,10 @@ async def update_project(
     ) as session:
         print("Uploading...")
 
-        project_id = await get_project_id(watchdog_api,api_key,owner_username,name)
+        project_id = await get_project_id(watchdog_api, api_key, name, owner_username)
+        if project_id is None:
+            raise Exception(f"No project with name {name} exists")
+
         url = f"{watchdog_api}/project/{project_id}/version"
 
         req = await session.post(
@@ -80,15 +89,15 @@ async def update_project(
             print(f"Updated project {project_id} with a new version: {version_id}!")
             return project_id, version_id
         else:
-            print(await req.text())
-            raise Exception("Something went wrong while updating project {project_id")
+            error = await req.text()
+            raise Exception(error)
 
 
 async def get_project_id(watchdog_api: str,
-    api_key: str,
-    owner_username: str,
-    name: str,
-) -> int:
+                         api_key: str,
+                         name: str,
+                         owner_username: str = '',
+                         ) -> int | None:
 
     async with aiohttp.ClientSession(
             headers={"x-api-key": api_key}) as session:
@@ -96,11 +105,11 @@ async def get_project_id(watchdog_api: str,
         url = f"{watchdog_api}/project/exists/{name}"
 
         if owner_username:
-            req = await session.get(url=url,  params={'owner_username', owner_username})
+            req = await session.get(url=url,  params={'owner_username': owner_username})
         else:
             req = await session.get(url=url)
 
         if req.status == 200:
             return await req.json()
         else:
-            raise Exception("No project with name {name} exists")
+            return None  # project does not exist
