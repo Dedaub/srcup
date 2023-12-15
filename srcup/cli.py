@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 
-
 import asyncio
 import builtins
+import pathlib
+import rich
 import sys
+import typer
+
+from crytic_compile.crytic_compile import CryticCompile
+from hashlib import sha1
+from packaging import version
+from subprocess import Popen, PIPE
 from typing import Optional, cast
 
-import rich
-import typer
-from crytic_compile.crytic_compile import CryticCompile
-from srcup.build import compile_build
 from srcup.api import create_project, update_project
+from srcup.build import compile_build
 from srcup.extract import process
-import pathlib
-
 from srcup.models import BuildSystem, ContractBytecode, ContractSource
-from subprocess import Popen, PIPE
-from hashlib import sha1
+from srcup.utils import get_latest_app_version, version_callback, __version__
+
 
 app = typer.Typer()
 builtins.print = rich.print  # type: ignore
@@ -35,8 +37,20 @@ def single(
     api_key: str = typer.Option(..., envvar="WD_API_KEY", help="Watchdog API key"),
     owner_username: str = typer.Option('', help="Username of project owner. Ignored when --init is also present"),
     name: str = typer.Option('', help="Project name"),
-    comment: str = typer.Option('', help="Comment for the project")
+    comment: str = typer.Option('', help="Comment for the project"),
+    app_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app", is_eager=True, callback=version_callback)
 ):
+    latest_app_version = asyncio.run(get_latest_app_version())
+    if not latest_app_version:
+        print("Warning: Failed to retrieve the latest available version of the app")
+
+    elif version.parse(__version__) < version.parse(latest_app_version):
+        print(f'Warning: A new version is available ({latest_app_version})\n')
+        print(f'Please, update the app to continue:')
+        print(f'  For pipx installation run:      pipx upgrade srcup')
+        print(f'  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup')
+        return
+
     build, *_ = compile_build(target, framework, cache, "lzma")
     asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
 
