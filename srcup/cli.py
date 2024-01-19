@@ -38,7 +38,8 @@ def single(
     owner_username: str = typer.Option('', help="Username of project owner. Ignored when --init is also present"),
     name: str = typer.Option('', help="Project name"),
     comment: str = typer.Option('', help="Comment for the project"),
-    app_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app", is_eager=True, callback=version_callback)
+    app_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app", is_eager=True, callback=version_callback),
+    use_ir: bool = typer.Option(False, help="Analyse Yul-IR instead of EVM bytecode")
 ):
     latest_app_version = asyncio.run(get_latest_app_version())
     if not latest_app_version:
