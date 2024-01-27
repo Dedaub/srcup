@@ -32,9 +32,9 @@ def single(
     init: bool = typer.Option(False, help="Is this a new project?"),
     api_url: str = typer.Option(
           "https://api.dedaub.com/api",
-        help="URL of the Watchdog API"
+        help="URL of the Dedaub API"
     ),
-    api_key: str = typer.Option(..., envvar="WD_API_KEY", help="Watchdog API key"),
+    api_key: str = typer.Option(..., envvar="WD_API_KEY", help="Dedaub API key"),
     owner_username: str = typer.Option('', help="Username of project owner. Ignored when --init is also present"),
     name: str = typer.Option('', help="Project name"),
     comment: str = typer.Option('', help="Comment for the project"),
@@ -75,7 +75,7 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
 
     try:
         if init:
-            project_id, version_id = await create_project(
+            project_id, version_sequence = await create_project(
                 api_url,
                 api_key,
                 name,
@@ -85,14 +85,14 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
                 git_hash
             )
             print(
-                f"Successfully created project #{project_id} with version {version_id}: https://watchdog.dedaub.com/projects/{project_id}"
+                f"Successfully created project #{project_id} with version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
         else:
-            project_id, version_id = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, git_hash)
+            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, git_hash)
             print(
-                f"Successfully updated project #{project_id} with new version {version_id}: https://watchdog.dedaub.com/projects/{project_id}"
+                f"Successfully updated project #{project_id} with new version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
-        print(f"{project_id} {version_id}")
+        print(f"{project_id} {version_sequence}")
 
     except Exception as e:
         print(f"Something went wrong with the project: {e}")
