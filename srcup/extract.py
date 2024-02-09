@@ -5,10 +5,12 @@ from typing import cast
 
 from crytic_compile.compilation_unit import CompilationUnit
 from crytic_compile.crytic_compile import CryticCompile
+from crytic_compile.platform.types import Type
 from crytic_compile.source_unit import SourceUnit
 from eth_hash.auto import keccak
 
-from srcup.models import ContractBytecode, ContractSource, HexBytes
+import os
+from models import ContractBytecode, ContractSource, HexBytes, BaseModel, YulIRCode
 
 
 def handle_type(input: dict) -> str:
@@ -66,10 +68,12 @@ def generate_remapping(references: list[str], file_ids: set[str]) -> dict[str, s
     }
 
 
-def process(artifact: CryticCompile) -> list[tuple[ContractSource, ContractBytecode]]:
-
-    contracts: list[tuple[ContractSource, ContractBytecode]] = []
-
+def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[tuple[ContractSource, BaseModel]]:
+    if not use_ir:
+        contracts: list[tuple[ContractSource, ContractBytecode]] = []
+    else:
+        contracts: list[tuple[ContractSource, YulIRCode]] = []
+    output_dir = os.path.join(artifact.working_dir, "out")
     for comp_unit in artifact.compilation_units.values():
         file_mapping = create_file_mapping(comp_unit)
         for source_unit in comp_unit.source_units.values():
@@ -123,13 +127,60 @@ def process(artifact: CryticCompile) -> list[tuple[ContractSource, ContractBytec
                         if abi["type"] == "error"
                     ],
                 )
-
-                bytecode = ContractBytecode(
-                    md5_bytecode=HexBytes(md5_bytecode),
-                    codehash=HexBytes(keccak(runtime_bytecode)),
-                    bytecode=HexBytes(runtime_bytecode),
-                )
-
+                if not use_ir:
+                    if artifact._platform.TYPE == Type.HARDHAT:
+                        extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
+                        im_ref = str(extra_fields_of_file.contract_to_im_ref.get(contract_name))
+                        debug_info = str(extra_fields_of_file.contract_to_debug_info.get(contract_name))
+                        bytecode = ContractBytecode(
+                        md5_bytecode=HexBytes(md5_bytecode),
+                        codehash=HexBytes(keccak(runtime_bytecode)),
+                        immutable_references=im_ref,
+                        debug_info=debug_info,
+                        bytecode=HexBytes(runtime_bytecode),
+                    )
+                    else:
+                        bytecode = ContractBytecode(
+                            md5_bytecode=HexBytes(md5_bytecode),
+                            codehash=HexBytes(keccak(runtime_bytecode)),
+                            bytecode=HexBytes(runtime_bytecode),
+                        )
+                else:
+                    if artifact._platform.TYPE == Type.FOUNDRY:
+                        output_dir = os.path.join(artifact.working_dir, "out")
+                        filename_only = source_unit.filename.short.split("/")[-1]
+                        contract_output = contract_name+".iropt"
+                        optimized_ir_filename = os.path.join(output_dir, filename_only, contract_output)
+                        optimized_ir_file = open(optimized_ir_filename, "r")
+                        yul_code = optimized_ir_file.read()
+                        bytecode = YulIRCode(
+                            md5_bytecode=HexBytes(md5_bytecode),
+                            codehash=HexBytes(keccak(bytes(yul_code, 'utf8'))),
+                            code=yul_code
+                        )
+                    if artifact._platform.TYPE == Type.SOLC:
+                        optimized_ir_filename = os.path.join(artifact.working_dir, contract_name+"_opt.yul")
+                        optimized_ir_file = open(optimized_ir_filename, "r")
+                        yul_code = optimized_ir_file.read()
+                        bytecode = YulIRCode(
+                            md5_bytecode=HexBytes(md5_bytecode),
+                            codehash=HexBytes(keccak(bytes(yul_code, 'utf8'))),
+                            code=yul_code
+                        )
+                    if artifact._platform.TYPE == Type.HARDHAT:
+                        if extra_fields != None:
+                            extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
+                            yul_code = str(extra_fields_of_file.contract_to_ir.get(contract_name))
+                            im_ref = str(extra_fields_of_file.contract_to_im_ref.get(contract_name))
+                            debug_info = str(extra_fields_of_file.contract_to_debug_info.get(contract_name))
+                            bytecode = YulIRCode(
+                                md5_bytecode=HexBytes(md5_bytecode),
+                                codehash=HexBytes(keccak(bytes(yul_code, 'utf8'))),
+                                immutable_references=im_ref,
+                                debug_info=debug_info,
+                                code=yul_code
+                            )
                 contracts.append((src, bytecode))
 
     return contracts
+

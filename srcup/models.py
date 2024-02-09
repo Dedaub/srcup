@@ -73,6 +73,21 @@ class ContractBytecode(BaseModel):
     md5_bytecode: HexBytes
     codehash: HexBytes
     bytecode: HexBytes
+    debug_info: str | None
+    immutable_references: str | None
+    origin: str = "watchdog"
+    _ts: datetime | None = None
+
+
+class YulIRCode(BaseModel):
+    # class Config:
+        # json_encoders = {bytes: lambda bs: f"0x{bs.hex()}"}
+
+    md5_bytecode: HexBytes
+    codehash: HexBytes
+    code: str
+    debug_info: str | None
+    immutable_references: str | None
     origin: str = "watchdog"
     _ts: datetime | None = None
 

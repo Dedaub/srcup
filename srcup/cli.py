@@ -16,7 +16,7 @@ from typing import Optional, cast
 from srcup.api import create_project, update_project
 from srcup.build import compile_build
 from srcup.extract import process
-from srcup.models import BuildSystem, ContractBytecode, ContractSource
+from srcup.models import BuildSystem, ContractBytecode, ContractSource, BaseModel
 from srcup.utils import get_latest_app_version, version_callback, __version__
 
 
@@ -52,15 +52,15 @@ def single(
         print(f'  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup')
         return
 
-    build, *_ = compile_build(target, framework, cache, "lzma")
-    asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
+    build, extra_fields, *_ = compile_build(target, use_ir, framework, cache, "lzma")
+    asyncio.run(asingle(build, extra_fields, use_ir, api_url, api_key, init, owner_username, name, comment, target))
 
 
-async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
-    contracts = process(artifact)
+async def asingle(artifact: CryticCompile, extra_fields: dict, use_ir: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
+    contracts = process(artifact, extra_fields, use_ir)
 
     sources, bytecodes = cast(
-        tuple[list[ContractSource], list[ContractBytecode]], tuple(zip(*contracts))
+        tuple[list[ContractSource], list[BaseModel]], tuple(zip(*contracts))
     )
     try:
         git_process = Popen(['git', '-C', target, 'rev-parse', 'HEAD'], shell=False, stdout=PIPE)
