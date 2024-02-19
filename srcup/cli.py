@@ -2,15 +2,17 @@
 
 import asyncio
 import builtins
+import os
 import pathlib
 import rich
 import sys
 import typer
+from crytic_compile import InvalidCompilation
 
 from crytic_compile.crytic_compile import CryticCompile
 from hashlib import sha1
 from packaging import version
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, TimeoutExpired
 from typing import Optional, cast
 
 from srcup.api import create_project, update_project
@@ -51,8 +53,18 @@ def single(
         print(f'  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup')
         return
 
-    build, *_ = compile_build(target, framework, cache, "lzma")
-    asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
+    try:
+        target = os.path.abspath(target)
+        build, *_ = compile_build(target, framework, cache, "lzma")
+        asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
+    except InvalidCompilation as e:
+        print(f"Unable to perform compilation.\n")
+        print("""    
+             Check the README file: 
+            'srcup assumes that the project to be uploaded has the default file layout of the underlying build system!'
+            """)
+        print(f"Error message was: {str(e)}")
+        sys.exit(-1)
 
 
 async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
@@ -61,14 +73,7 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
     sources, bytecodes = cast(
         tuple[list[ContractSource], list[ContractBytecode]], tuple(zip(*contracts))
     )
-    try:
-        git_process = Popen(['git', '-C', target, 'rev-parse', 'HEAD'], shell=False, stdout=PIPE)
-        result = git_process.communicate()
-        git_hash = result[0].strip().decode("utf-8")
-    except FileNotFoundError as error:
-        # No git present?
-        bytecode_hashes = b"".join([item.codehash for item in bytecodes])
-        git_hash = sha1(bytecode_hashes).hexdigest()
+    git_hash = await calc_hash(bytecodes, target)
 
     if not name:
         name = pathlib.Path(target).resolve().name
@@ -97,3 +102,23 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
     except Exception as e:
         print(f"Something went wrong with the project: {e}")
         sys.exit(-1)
+
+
+async def calc_hash(bytecodes, target):
+    try:
+        git_hash = ''
+        git_process = Popen(['git', '-C', os.path.dirname(target), 'rev-parse', 'HEAD'], shell=False, stdout=PIPE,
+                            stderr=PIPE)
+        result, error = git_process.communicate(timeout=60)
+        if error == b'':
+            git_hash = result.strip().decode("utf-8")
+    except FileNotFoundError as error:
+        print(f"git was not installed or git repository not detected: {error}")
+    except TimeoutExpired:
+        git_process.kill()
+        print(f"git took too long to answer")
+    finally:
+        if git_hash == '':
+            bytecode_hashes = b"".join([item.codehash for item in bytecodes])
+            git_hash = sha1(bytecode_hashes).hexdigest()
+    return git_hash

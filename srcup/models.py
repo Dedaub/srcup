@@ -1,10 +1,9 @@
-import re
 from datetime import datetime
 from enum import Enum
 
-from typing import Any, Callable, Generator
+from typing import Any, Annotated
 
-from pydantic import BaseModel, errors, ConstrainedStr
+from pydantic import ConfigDict, BaseModel, errors, PlainValidator, StringConstraints, PlainSerializer
 
 
 def hex_bytes_validator(val: Any) -> bytes:
@@ -17,13 +16,9 @@ def hex_bytes_validator(val: Any) -> bytes:
     raise errors.BytesError()
 
 
-class HexBytes(bytes):
-    @classmethod
-    def __get_validators__(cls) -> Generator[Callable[..., Any], None, None]:
-        yield hex_bytes_validator
+HexBytes = Annotated[bytes, PlainValidator(hex_bytes_validator), PlainSerializer(lambda bs: bs.hex())]
+HexString = Annotated[str, StringConstraints(pattern=r"^(0x)?[0-9A-Fa-f]{2,}$"), ]
 
-class HexString(ConstrainedStr):
-    regex = re.compile("^(0x)?[0-9A-Fa-f]{2,}$")
 
 class BuildSystem(Enum):
     # ARCHIVE = "Archive"
@@ -44,8 +39,9 @@ class BuildSystem(Enum):
 
 
 class ContractSource(BaseModel):
-    class Config:
-        json_encoders = {bytes: lambda bs: f"0x{bs.hex()}"}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={bytes: lambda bs: f"0x{bs.hex()}"})
 
     md5_bytecode: HexBytes
     contract_name: str
@@ -60,15 +56,17 @@ class ContractSource(BaseModel):
 
 
 class ProjectSource(ContractSource):
-    class Config:
-        json_encoders = {bytes: lambda bs: f"0x{bs.hex()}"}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={bytes: lambda bs: f"0x{bs.hex()}"})
 
     project_id: int
 
 
 class ContractBytecode(BaseModel):
-    class Config:
-        json_encoders = {bytes: lambda bs: f"0x{bs.hex()}"}
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={bytes: lambda bs: f"0x{bs.hex()}"})
 
     md5_bytecode: HexBytes
     codehash: HexBytes

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import aiohttp
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 from srcup.models import ContractBytecode, ContractSource, HexString
 
@@ -16,8 +16,9 @@ async def create_project(
     git_hash: HexString
 ) -> int:
     class Payload(BaseModel):
-        class Config:
-            json_encoders = {bytes: lambda bs: bs.hex()}
+        # TODO[pydantic]: The following keys were removed: `json_encoders`.
+        # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+        model_config = ConfigDict(json_encoders={bytes: lambda bs: bs.hex()})
 
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
@@ -61,8 +62,9 @@ async def update_project(
     git_hash: HexString
 ) -> tuple[int, int]:
     class Payload(BaseModel):
-        class Config:
-            json_encoders = {bytes: lambda bs: bs.hex()}
+        # TODO[pydantic]: The following keys were removed: `json_encoders`.
+        # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+        model_config = ConfigDict(json_encoders={bytes: lambda bs: bs.hex()})
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
         comment: str
