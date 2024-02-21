@@ -1,6 +1,6 @@
-# Watchdog srcup
+# Dedaub srcup
 
-`srcup` is Dedaub's utility CLI for uploading your project's code into the analysis engine of Watchdog.
+`srcup` is Dedaub's utility CLI for uploading your project's code into the Dedaub analysis engine.
 
 ## Installation
 
@@ -27,7 +27,7 @@ pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup
 
 ## Usage
 
-The following steps assumes you've acquired/generated a Watchdog API key. This can be done from your Watchdog
+The following steps assumes you've acquired/generated a Dedaub app API key. This can be done from the Dedaub app
 profile page (top right corner of the UI, top right button in the header of that page).
 
 To upload the sources of a project:
@@ -41,7 +41,7 @@ parameter is optional, it can help guide the CLI tool. There are cases where mul
 present in a project (e.g., Hardhat for building and Foundry for testing/fuzzing) which can confuse our tool. In
 any case, the framework parameter refers to the tool used to **build** the project. If your project only uses one
 framework, `srcup` should be able to successfully infer the correct framework.
-  * `init` indicates that this is the initial version of your project: the first time you add the project to watchdog.
+  * `init` indicates that this is the initial version of your project: the first time you add the project to Dedaub.
   * `name` is a name you can freely choose for your project
 4. Each project can have multiple versions. You can upload another version of the same project using a similar command:
  * `srcup --api-key <api_key> --framework <project_framework>  --name <project_name>` (note the absence of init). The project
@@ -50,15 +50,15 @@ name should be the same as in the initial version
   * `srcup --api-key <api_key> --framework <project_framework>  --comment Message --name <project_name> <project location>`
 6. Projects can be shared too. If you want to upload a version of a project for which you have WRITE access you can do:
  * `srcup --api-key <api_key> --framework <project_framework>  --owner_username <username> --name <project_name> <project location>`
-7. The CLI tool will compile and upload the artifacts to Watchdog. This might take a while. Upon completion, a
-Watchdog project URL will be provided.
+7. The CLI tool will compile and upload the artifacts to Dedaub. This might take a while. Upon completion, a
+Dedaub project URL will be provided.
 
 ## A note regarding the layout of the project
 Right now, `srcup` assumes that the project to be uploaded has the default file layout of the underlying build system. Until the tool provides the ability to override the default paths,
 one might need to momentarily use the default layout of the specified build system for the uploading process to work seamlessly.
 
 ### Build-system-specific notes
-- The layout of a `hardhat` project should be inferred automatically by the tool. This is done via an invokation to `hardhat`'s console (the default output directory is `artifacts`)
+- The layout of a `hardhat` project should be inferred automatically by the tool. This is done via an invocation to `hardhat`'s console (the default output directory is `artifacts`)
 - The output directory of a `foundry` project should be `out` (default directory)
 - The output directory of a `truffle` project should be `build/contracts` (default directory)
 
