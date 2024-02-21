@@ -10,7 +10,6 @@ from crytic_compile.platform.hardhat import Hardhat
 from crytic_compile.platform.solc import Solc, relative_to_short
 from crytic_compile.utils.naming import convert_filename, extract_name
 from crytic_compile.utils.zip import save_to_zip
-from srcup.fld_proc import FieldObj, HighLevelFieldObj, ListFieldObj
 
 from srcup.models import BuildSystem
 
@@ -61,20 +60,41 @@ def compile_build(
         elif Solc.is_supported(build_path):
             build = CryticCompile(build_path, compile_custom_build="solc -o ./ --ir-optimized "+build_path)
         elif Hardhat.is_supported(build_path):
+            extra_config = """\n\n
+if (typeof module.exports == "undefined"){
+    module.exports = {}
+}
+if (!Object.keys(module.exports).includes('solidity')){
+    module.exports.solidity = {}
+    module.exports.solidity.version = "0.8.23"
+}
+if (!Object.keys(module.exports.solidity).includes('settings')) {
+    module.exports.solidity.settings = {}
+}
+if (!Object.keys(module.exports.solidity.settings).includes('outputSelection')){
+    module.exports.solidity.settings.outputSelection = {}
+}
+if (!Object.keys(module.exports.solidity.settings.outputSelection).includes("*")){
+    module.exports.solidity.settings.outputSelection["*"] = {};
+}
+if (!Object.keys(module.exports.solidity.settings.outputSelection["*"]).includes("*")){
+    module.exports.solidity.settings.outputSelection["*"]["*"] = [];
+}
+
+outputs = module.exports.solidity.settings.outputSelection["*"]["*"];
+if (!outputs.includes('evm.deployedBytecode.functionDebugData')){
+    outputs.push('evm.deployedBytecode.functionDebugData');
+}
+if (!outputs.includes('evm.deployedBytecode.immutableReferences')){
+    outputs.push('evm.deployedBytecode.immutableReferences');
+}
+if (!outputs.includes('irOptimizedAst')){
+    outputs.push('irOptimizedAst');
+}
+            """
             initial_config = open("hardhat.config.js", "r").read()
-            inner = ListFieldObj("\"*\"")
-            inner.must_have_fields.append("\"irOptimizedAst\"")
-            inner.must_have_fields.append("\"evm.deployedBytecode.immutableReferences\"")
-            inner.must_have_fields.append("\"evm.deployedBytecode.functionDebugData\"")
-            all_fld = FieldObj("\"*\"", inner)
-            output_fld = FieldObj("\"outputSelection\"", all_fld)
-            settings_fld = FieldObj("settings", output_fld)
-            solidity_fld = FieldObj("solidity", settings_fld)
-            module_exp = HighLevelFieldObj("module.exports",solidity_fld)
-            module_exp.parse_string(initial_config)
-            new_confg = module_exp.format_field()
-            config_file = open("hardhat.config.js", "w")
-            config_file.write(new_confg)
+            config_file = open("hardhat.config.js", "a")
+            config_file.write(extra_config)
             config_file.close()
             build = CryticCompile(build_path, **kwargs)
             build_directory = Path(
@@ -88,18 +108,38 @@ def compile_build(
             config_file.close()
     elif not use_ir and Hardhat.is_supported(build_path):
             initial_config = open("hardhat.config.js", "r").read()
-            inner = ListFieldObj("\"*\"")
-            inner.must_have_fields.append("\"evm.deployedBytecode.immutableReferences\"")
-            inner.must_have_fields.append("\"evm.deployedBytecode.functionDebugData\"")
-            all_fld = FieldObj("\"*\"", inner)
-            output_fld = FieldObj("\"outputSelection\"", all_fld)
-            settings_fld = FieldObj("settings", output_fld)
-            solidity_fld = FieldObj("solidity", settings_fld)
-            module_exp = HighLevelFieldObj("module.exports",solidity_fld)
-            module_exp.parse_string(initial_config)
-            new_confg = module_exp.format_field()
-            config_file = open("hardhat.config.js", "w")
-            config_file.write(new_confg)
+            extra_config = """\n\n
+if (typeof module.exports == "undefined"){
+    module.exports = {}
+}
+if (!Object.keys(module.exports).includes('solidity')){
+    module.exports.solidity = {}
+    module.exports.solidity.version = "0.8.23"
+}
+if (!Object.keys(module.exports.solidity).includes('settings')) {
+    module.exports.solidity.settings = {}
+}
+if (!Object.keys(module.exports.solidity.settings).includes('outputSelection')){
+    module.exports.solidity.settings.outputSelection = {}
+}
+if (!Object.keys(module.exports.solidity.settings.outputSelection).includes("*")){
+    module.exports.solidity.settings.outputSelection["*"] = {};
+}
+if (!Object.keys(module.exports.solidity.settings.outputSelection["*"]).includes("*")){
+    module.exports.solidity.settings.outputSelection["*"]["*"] = [];
+}
+
+outputs = module.exports.solidity.settings.outputSelection["*"]["*"];
+if (!outputs.includes('evm.deployedBytecode.functionDebugData')){
+    outputs.push('evm.deployedBytecode.functionDebugData');
+}
+if (!outputs.includes('evm.deployedBytecode.immutableReferences')){
+    outputs.push('evm.deployedBytecode.immutableReferences');
+}
+            """
+            initial_config = open("hardhat.config.js", "r").read()
+            config_file = open("hardhat.config.js", "a")
+            config_file.write(extra_config)
             config_file.close()
             build = CryticCompile(build_path, **kwargs)
             build_directory = os.path.join(
