@@ -53,7 +53,8 @@ class ContractSource(BaseModel):
     array_function_selectors: list[HexBytes]
     array_event_selectors: list[HexBytes]
     array_error_selectors: list[HexBytes]
-
+    debug_info: str | None
+    immutable_references: str | None
 
 class ProjectSource(ContractSource):
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
