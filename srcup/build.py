@@ -10,7 +10,7 @@ from crytic_compile.platform.hardhat import Hardhat
 from crytic_compile.platform.solc import Solc, relative_to_short
 from crytic_compile.utils.naming import convert_filename, extract_name
 from crytic_compile.utils.zip import save_to_zip
-
+import srcup.constants
 from srcup.models import BuildSystem
 
 """
@@ -45,57 +45,23 @@ def compile_build(
     build = None
     if use_ir:
         if Foundry.is_supported(build_path) or buildsystem == BuildSystem.FOUNDRY:
-            json_config_file = open("foundry.toml", "r")
-            prev_json_config = json_config_file.read()
-            json_config_file.close()
-            json_config_file = open("foundry.toml", "w")
-            json_config_file.write(subprocess.run(
-                    ["forge", "config", "--extra-output-files", "irOptimized"], cwd=build_path, stdout=subprocess.PIPE, check=True
-                ).stdout.decode('utf8'))
-            json_config_file.close()
+            with open("foundry.toml", "r") as f:
+                prev_json_config = f.read()
+            with open("foundry.toml", "w") as f:
+                f.write(subprocess.run(
+                        ["forge", "config", "--extra-output-files", "irOptimized"], cwd=build_path, stdout=subprocess.PIPE, check=True
+                    ).stdout.decode('utf8'))
             build = CryticCompile(build_path, **kwargs)
-            json_config_file = open("foundry.toml", "w")
-            json_config_file.write(prev_json_config)
-            json_config_file.close()
+            with open("foundry.toml", "w") as f:
+                f.write(prev_json_config)
         elif Solc.is_supported(build_path):
             build = CryticCompile(build_path, compile_custom_build="solc -o ./ --ir-optimized "+build_path)
         elif Hardhat.is_supported(build_path):
-            extra_config = """\n\n
-if (typeof module.exports == "undefined"){
-    module.exports = {}
-}
-if (!Object.keys(module.exports).includes('solidity')){
-    module.exports.solidity = {}
-    module.exports.solidity.version = "0.8.23"
-}
-if (!Object.keys(module.exports.solidity).includes('settings')) {
-    module.exports.solidity.settings = {}
-}
-if (!Object.keys(module.exports.solidity.settings).includes('outputSelection')){
-    module.exports.solidity.settings.outputSelection = {}
-}
-if (!Object.keys(module.exports.solidity.settings.outputSelection).includes("*")){
-    module.exports.solidity.settings.outputSelection["*"] = {};
-}
-if (!Object.keys(module.exports.solidity.settings.outputSelection["*"]).includes("*")){
-    module.exports.solidity.settings.outputSelection["*"]["*"] = [];
-}
-
-outputs = module.exports.solidity.settings.outputSelection["*"]["*"];
-if (!outputs.includes('evm.deployedBytecode.functionDebugData')){
-    outputs.push('evm.deployedBytecode.functionDebugData');
-}
-if (!outputs.includes('evm.deployedBytecode.immutableReferences')){
-    outputs.push('evm.deployedBytecode.immutableReferences');
-}
-if (!outputs.includes('irOptimizedAst')){
-    outputs.push('irOptimizedAst');
-}
-            """
-            initial_config = open("hardhat.config.js", "r").read()
-            config_file = open("hardhat.config.js", "a")
-            config_file.write(extra_config)
-            config_file.close()
+            extra_config = srcup.constants.extra_config + srcup.constants.ir_ast_config
+            with open("hardhat.config.js", "r") as f:
+                initial_config = f.read()
+            with open("hardhat.config.js", "a") as f:
+                f.write(extra_config)
             build = CryticCompile(build_path, **kwargs)
             build_directory = Path(
                 build.target,
@@ -103,44 +69,14 @@ if (!outputs.includes('irOptimizedAst')){
                 "build-info",
             )
             extra_fields = get_extraFields(build, build.target, build_directory, build.working_dir, use_ir)
-            config_file = open("hardhat.config.js", "w")
-            config_file.write(initial_config)
-            config_file.close()
+            with open("hardhat.config.js", "w") as f:
+                f.write(initial_config)
     elif not use_ir and Hardhat.is_supported(build_path):
-            initial_config = open("hardhat.config.js", "r").read()
-            extra_config = """\n\n
-if (typeof module.exports == "undefined"){
-    module.exports = {}
-}
-if (!Object.keys(module.exports).includes('solidity')){
-    module.exports.solidity = {}
-    module.exports.solidity.version = "0.8.23"
-}
-if (!Object.keys(module.exports.solidity).includes('settings')) {
-    module.exports.solidity.settings = {}
-}
-if (!Object.keys(module.exports.solidity.settings).includes('outputSelection')){
-    module.exports.solidity.settings.outputSelection = {}
-}
-if (!Object.keys(module.exports.solidity.settings.outputSelection).includes("*")){
-    module.exports.solidity.settings.outputSelection["*"] = {};
-}
-if (!Object.keys(module.exports.solidity.settings.outputSelection["*"]).includes("*")){
-    module.exports.solidity.settings.outputSelection["*"]["*"] = [];
-}
-
-outputs = module.exports.solidity.settings.outputSelection["*"]["*"];
-if (!outputs.includes('evm.deployedBytecode.functionDebugData')){
-    outputs.push('evm.deployedBytecode.functionDebugData');
-}
-if (!outputs.includes('evm.deployedBytecode.immutableReferences')){
-    outputs.push('evm.deployedBytecode.immutableReferences');
-}
-            """
-            initial_config = open("hardhat.config.js", "r").read()
-            config_file = open("hardhat.config.js", "a")
-            config_file.write(extra_config)
-            config_file.close()
+            extra_config = srcup.constants.extra_config
+            with open("hardhat.config.js", "r") as f:
+                initial_config = f.read()
+            with open("hardhat.config.js", "a") as f:
+                f.write(extra_config)
             build = CryticCompile(build_path, **kwargs)
             build_directory = os.path.join(
                 build.target,
@@ -148,9 +84,8 @@ if (!outputs.includes('evm.deployedBytecode.immutableReferences')){
                 "build-info",
             )
             extra_fields = get_extraFields(build, build.target, build_directory, build.working_dir, use_ir)
-            config_file = open("hardhat.config.js", "w")
-            config_file.write(initial_config)
-            config_file.close()
+            with open("hardhat.config.js", "w") as f:
+                f.write(initial_config)
 
     # crytic-compile automatically creates the `export_dir` directory if it does not exist
     export_path: str = build.export(export_format=export_format, export_dir=export_dir)[
