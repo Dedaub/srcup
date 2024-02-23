@@ -18,7 +18,7 @@ from typing import Optional, cast
 from srcup.api import create_project, update_project
 from srcup.build import compile_build
 from srcup.extract import process
-from srcup.models import BuildSystem, ContractBytecode, ContractSource, BaseModel
+from srcup.models import BuildSystem, ContractBytecode, ContractSource, YulIRCode
 from srcup.utils import get_latest_app_version, version_callback, __version__
 
 
@@ -71,8 +71,8 @@ def single(
 async def asingle(artifact: CryticCompile, extra_fields: dict, use_ir: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
     contracts = process(artifact, extra_fields, use_ir)
 
-    sources, bytecodes = cast(
-        tuple[list[ContractSource], list[BaseModel]], tuple(zip(*contracts))
+    sources, bytecodes, yul_ir = cast(
+        tuple[list[ContractSource], list[ContractBytecode], list[YulIRCode | None]], tuple(zip(*contracts))
     )
     git_hash = await calc_hash(bytecodes, target)
 
@@ -88,13 +88,14 @@ async def asingle(artifact: CryticCompile, extra_fields: dict, use_ir: bool, api
                 comment,
                 sources,
                 bytecodes,
+                yul_ir,
                 git_hash
             )
             print(
                 f"Successfully created project #{project_id} with version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
         else:
-            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, git_hash)
+            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, git_hash)
             print(
                 f"Successfully updated project #{project_id} with new version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )

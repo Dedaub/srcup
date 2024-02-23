@@ -78,8 +78,7 @@ class ContractBytecode(BaseModel):
 
 
 class YulIRCode(BaseModel):
-    # class Config:
-        # json_encoders = {bytes: lambda bs: f"0x{bs.hex()}"}
+    model_config = ConfigDict(json_encoders={bytes: lambda bs: f"0x{bs.hex()}"})
 
     md5_bytecode: HexBytes
     codehash: HexBytes

@@ -3,7 +3,7 @@
 import aiohttp
 from pydantic import ConfigDict, BaseModel
 
-from srcup.models import ContractBytecode, ContractSource, HexString
+from srcup.models import ContractBytecode, ContractSource, HexString, YulIRCode
 
 
 async def create_project(
@@ -13,6 +13,7 @@ async def create_project(
     comment: str,
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
+    ir_code: list[YulIRCode | None],
     git_hash: HexString
 ) -> int:
     class Payload(BaseModel):
@@ -22,6 +23,7 @@ async def create_project(
 
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
+        ir_code: list[YulIRCode | None]
         name: str
         comment: str
         git_hash: HexString
@@ -40,7 +42,7 @@ async def create_project(
 
         req = await session.post(
             url=url,
-            json=Payload(sources=sources, bytecode=bytecode, name=name, comment=comment, git_hash=git_hash)
+            json=Payload(sources=sources, bytecode=bytecode, ir_code=ir_code, name=name, comment=comment, git_hash=git_hash)
         )
 
         if req.status == 200:
@@ -59,6 +61,7 @@ async def update_project(
     comment: str,
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
+    ir_code: list[YulIRCode | None],
     git_hash: HexString
 ) -> tuple[int, int]:
     class Payload(BaseModel):
@@ -67,6 +70,7 @@ async def update_project(
         model_config = ConfigDict(json_encoders={bytes: lambda bs: bs.hex()})
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
+        ir_code: list[YulIRCode | None]
         comment: str
         git_hash: HexString
 
@@ -83,7 +87,7 @@ async def update_project(
 
         req = await session.post(
             url=url,
-            json=Payload(sources=sources, bytecode=bytecode, comment=comment, git_hash=git_hash)
+            json=Payload(sources=sources, bytecode=bytecode, ir_code=ir_code, comment=comment, git_hash=git_hash)
         )
 
         if req.status == 200:
