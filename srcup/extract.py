@@ -97,6 +97,17 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
 
                 md5_bytecode = md5(runtime_bytecode).digest()
 
+                im_ref = None
+                debug_info = None
+                yul_code = None
+                yul_ir = None
+                if artifact._platform.TYPE == Type.HARDHAT:
+                    extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
+
+                    if extra_fields_of_file:
+                        im_ref = str(extra_fields_of_file.contract_to_im_ref.get(contract_name))
+                        debug_info = str(extra_fields_of_file.contract_to_debug_info.get(contract_name))
+
                 src = ContractSource(
                     contract_name=contract_name,
                     contract_path=source_unit.filename.short,
@@ -123,22 +134,12 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
                         for abi in source_unit.abi(contract_name)
                         if abi["type"] == "error"
                     ],
+                   immutable_references=im_ref,
+                   debug_info=debug_info,
                 )
-                im_ref = None
-                debug_info = None
-                yul_code = None
-                yul_ir = None
-                if artifact._platform.TYPE == Type.HARDHAT:
-                    extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
-
-                    if extra_fields_of_file:
-                        im_ref = str(extra_fields_of_file.contract_to_im_ref.get(contract_name))
-                        debug_info = str(extra_fields_of_file.contract_to_debug_info.get(contract_name))
                 bytecode = ContractBytecode(
                     md5_bytecode=HexBytes(md5_bytecode),
                     codehash=HexBytes(keccak(runtime_bytecode)),
-                    immutable_references=im_ref,
-                    debug_info=debug_info,
                     bytecode=HexBytes(runtime_bytecode),
                 )
 
@@ -161,17 +162,14 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
                     if artifact._platform.TYPE == Type.HARDHAT:
                         if extra_fields != None:
                             extra_fields_of_file = extra_fields.get(source_unit.filename.absolute, {})
-                            yul_code = str(extra_fields_of_file.contract_to_ir.get(contract_name))
-                            im_ref = str(extra_fields_of_file.contract_to_im_ref.get(contract_name))
-                            debug_info = str(extra_fields_of_file.contract_to_debug_info.get(contract_name))
+                            if raw_yul_code := extra_fields_of_file.contract_to_ir.get(contract_name):
+                                yul_code = str(raw_yul_code)
 
                     if yul_code:
                         yul_ir = YulIRCode(
                             md5_bytecode=HexBytes(md5_bytecode),
                             codehash=HexBytes(keccak(bytes(yul_code, 'utf8'))),
-                            immutable_references=im_ref,
-                            debug_info=debug_info,
-                            code=yul_code
+                            yul_ast=yul_code
                         )
                 contracts.append((src, bytecode, yul_ir))
 

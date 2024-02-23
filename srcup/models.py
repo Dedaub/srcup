@@ -53,7 +53,8 @@ class ContractSource(BaseModel):
     array_function_selectors: list[HexBytes]
     array_event_selectors: list[HexBytes]
     array_error_selectors: list[HexBytes]
-
+    debug_info: str | None
+    immutable_references: str | None
 
 class ProjectSource(ContractSource):
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
@@ -71,8 +72,6 @@ class ContractBytecode(BaseModel):
     md5_bytecode: HexBytes
     codehash: HexBytes
     bytecode: HexBytes
-    debug_info: str | None
-    immutable_references: str | None
     origin: str = "watchdog"
     _ts: datetime | None = None
 
@@ -82,9 +81,7 @@ class YulIRCode(BaseModel):
 
     md5_bytecode: HexBytes
     codehash: HexBytes
-    code: str
-    debug_info: str | None
-    immutable_references: str | None
+    yul_ast: str
     origin: str = "watchdog"
     _ts: datetime | None = None
 
