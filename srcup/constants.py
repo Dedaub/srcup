@@ -1,9 +1,8 @@
 def get_extra_config(use_ir: bool):
     return f"""
-const patchIr = {str(use_ir).lower()}
+const patchIr = {str(use_ir).lower()};
     """ + """\n
 function patch_compiler_object(obj) {
-    console.log(obj)
     if (!Object.keys(obj).includes('settings')) {
         obj.settings = {}
     }
@@ -42,11 +41,5 @@ if (Object.keys(module.exports.default.solidity).includes('compilers')){
     module.exports.default.solidity.compilers.forEach((c) => patch_compiler_object(c));
 } else {
     patch_compiler_object(module.exports.default.solidity)
-}
-"""
-
-ir_ast_config = """\n
-if (!outputs.includes('irOptimizedAst')){
-    outputs.push('irOptimizedAst');
 }
 """
