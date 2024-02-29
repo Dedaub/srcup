@@ -5,8 +5,6 @@ from typing import Any, Callable
 
 from crytic_compile.crytic_compile import CryticCompile, compile_all
 from crytic_compile.platform.types import Type
-from crytic_compile.platform.foundry import Foundry
-from crytic_compile.platform.hardhat import Hardhat
 from crytic_compile.platform.solc import Solc, relative_to_short
 from crytic_compile.utils.naming import convert_filename, extract_name
 from crytic_compile.utils.zip import save_to_zip
@@ -58,8 +56,8 @@ def compile_build(
     class CustomCryticCompile(CryticCompile):
         def _compile(self, **kwargs: str) -> None:
             config_handlers: dict[Type, Callable[[str, bool], tuple[Path, str] | None]] = {
-                Hardhat.TYPE: handle_hardhat_config,
-                Foundry.TYPE: handle_foundry_config,
+                Type.HARDHAT: handle_hardhat_config,
+                Type.FOUNDRY: handle_foundry_config,
             }
 
             handler = config_handlers.get(self.platform.TYPE, lambda *_: None)
@@ -86,7 +84,7 @@ def compile_build(
 
     build = CustomCryticCompile(build_path, **kwargs)
 
-    if build.platform.TYPE == Hardhat.TYPE:
+    if build.platform.TYPE == Type.HARDHAT:
         build_directory = Path(
             build.target,
             "artifacts",
