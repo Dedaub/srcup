@@ -68,10 +68,58 @@ def generate_remapping(references: list[str], file_ids: set[str]) -> dict[str, s
         )
     }
 
+def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> tuple[dict | None, dict | None, YulIRCode | None]:
+    im_ref, debug_info, yul_ir = None, None, None
+
+    # If we are building with Hardhat, we can extract the extra fields
+    if artifact.platform.TYPE == Type.HARDHAT:
+        extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
+
+        if extra_fields_of_file:
+            im_ref = extra_fields_of_file.contract_to_im_ref.get(contract_name)
+            debug_info = extra_fields_of_file.contract_to_debug_info.get(contract_name)
+
+    # Nothing else to do for the other systems (for now)
+    if not use_ir:
+        return im_ref, debug_info, yul_ir
+
+    # Try and extract yul
+    yul_code = None
+    if artifact.platform.TYPE == Type.FOUNDRY:
+        output_dir = os.path.join(artifact.working_dir, "out")
+        filename_only = source_unit.filename.short.split("/")[-1]
+        contract_output = contract_name + ".iropt"
+        optimized_ir_filename = os.path.join(output_dir, filename_only, contract_output)
+
+        if os.path.isfile(optimized_ir_filename):
+            with open(optimized_ir_filename, "r") as f:
+                yul_code = f.read()
+        else:
+            print(f"Could not find IR optimized output for {contract_name}")
+    elif artifact.platform.TYPE == Type.SOLC:
+        optimized_ir_filename = os.path.join(artifact.working_dir, contract_name+"_opt.yul")
+        with open(optimized_ir_filename, "r") as f:
+            yul_code = f.read()
+    elif artifact.platform.TYPE == Type.HARDHAT:
+        if extra_fields is not None:
+            extra_fields_of_file = extra_fields.get(source_unit.filename.absolute, {})
+            if raw_yul_code := extra_fields_of_file.contract_to_ir.get(contract_name):
+                yul_code = json.dumps(raw_yul_code)
+
+    if yul_code:
+        yul_ir = YulIRCode(
+            md5_bytecode=HexBytes(md5_bytecode),
+            codehash=HexBytes(keccak(bytes(yul_code, 'utf8'))),
+            yul_ast=yul_code
+        )
+
+    return im_ref, debug_info, yul_ir
+
+
 
 def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[tuple[ContractSource, ContractBytecode, YulIRCode | None]]:
     contracts: list[tuple[ContractSource, ContractBytecode, YulIRCode | None]] = []
-    output_dir = os.path.join(artifact.working_dir, "out")
+
     for comp_unit in artifact.compilation_units.values():
         file_mapping = create_file_mapping(comp_unit)
         for source_unit in comp_unit.source_units.values():
@@ -98,16 +146,7 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
 
                 md5_bytecode = md5(runtime_bytecode).digest()
 
-                im_ref = None
-                debug_info = None
-                yul_code = None
-                yul_ir = None
-                if artifact._platform.TYPE == Type.HARDHAT:
-                    extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
-
-                    if extra_fields_of_file:
-                        im_ref = extra_fields_of_file.contract_to_im_ref.get(contract_name)
-                        debug_info = extra_fields_of_file.contract_to_debug_info.get(contract_name)
+                im_ref, debug_info, yul_ir = extract_extra_fields(md5_bytecode, contract_name, source_unit, artifact, extra_fields, use_ir)
 
                 src = ContractSource(
                     contract_name=contract_name,
@@ -144,34 +183,6 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
                     bytecode=HexBytes(runtime_bytecode),
                 )
 
-                if use_ir:
-                    if artifact._platform.TYPE == Type.FOUNDRY:
-                        output_dir = os.path.join(artifact.working_dir, "out")
-                        filename_only = source_unit.filename.short.split("/")[-1]
-                        contract_output = contract_name+".iropt"
-                        optimized_ir_filename = os.path.join(output_dir, filename_only, contract_output)
-                        if os.path.isfile(optimized_ir_filename):
-                            with open(optimized_ir_filename, "r") as f:
-                                yul_code = f.read()
-                        else:
-                            print(f"Could not find IR optimized output for {contract_name}")
-
-                    if artifact._platform.TYPE == Type.SOLC:
-                        optimized_ir_filename = os.path.join(artifact.working_dir, contract_name+"_opt.yul")
-                        with open(optimized_ir_filename, "r") as f:
-                            yul_code = f.read()
-                    if artifact._platform.TYPE == Type.HARDHAT:
-                        if extra_fields != None:
-                            extra_fields_of_file = extra_fields.get(source_unit.filename.absolute, {})
-                            if raw_yul_code := extra_fields_of_file.contract_to_ir.get(contract_name):
-                                yul_code = json.dumps(raw_yul_code)
-
-                    if yul_code:
-                        yul_ir = YulIRCode(
-                            md5_bytecode=HexBytes(md5_bytecode),
-                            codehash=HexBytes(keccak(bytes(yul_code, 'utf8'))),
-                            yul_ast=yul_code
-                        )
                 contracts.append((src, bytecode, yul_ir))
 
     return contracts

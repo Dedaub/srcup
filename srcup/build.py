@@ -1,18 +1,17 @@
-from asyncio import create_subprocess_shell
 import json
 import os
-import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from crytic_compile.crytic_compile import CryticCompile, compile_all
+from crytic_compile.platform.types import Type
 from crytic_compile.platform.foundry import Foundry
 from crytic_compile.platform.hardhat import Hardhat
 from crytic_compile.platform.solc import Solc, relative_to_short
 from crytic_compile.utils.naming import convert_filename, extract_name
 from crytic_compile.utils.zip import save_to_zip
-import srcup.constants
 from srcup.models import BuildSystem
+from srcup.config_handlers import handle_hardhat_config, handle_foundry_config
 
 """
     Compiles a single build and exports it to the `export_dir` directory. Output can be compressed.
@@ -27,13 +26,6 @@ from srcup.models import BuildSystem
 
 """
 
-def find_hardhat_config(target: str) -> str | None:
-    for candidate in ("hardhat.config.js", "hardhat.config.ts", "hardhat.config.cjs"):  
-        if os.path.isfile(os.path.join(target, candidate)):
-            return candidate
-
-    return None
-
 def compile_build(
     build_path: str,
     use_ir: bool,
@@ -43,73 +35,44 @@ def compile_build(
     export_dir: str = "watchdog",
     export_format: str = "archive",  # include source content in the exported json
 ) -> tuple[CryticCompile, dict | None, str, str | None]:
+    class CustomCryticCompile(CryticCompile):
+        def _compile(self, **kwargs: str) -> None:
+            config_handlers: dict[Type, Callable[[str, bool], tuple[Path, str] | None]] = {
+                Hardhat.TYPE: handle_hardhat_config,
+                Foundry.TYPE: handle_foundry_config,
+            }
+
+            handler = config_handlers.get(self.platform.TYPE, lambda *_: None)
+
+            original_config = handler(build_path, use_ir)
+
+            if self.platform.TYPE == Solc:
+                kwargs["compile_custom_build"] = "solc -o ./ --ir-optimized " + build_path
+
+            try:
+                return super()._compile(**kwargs)
+            finally:
+                if not original_config:
+                    return
+
+                path, content = original_config
+                with open(path, "w") as f:
+                    f.write(content)
+
     extra_fields = {}
     kwargs: dict[str, Any] = {"ignore_compile": use_cached_build}
-    buildsystem = None
     if framework:
         kwargs["compile_force_framework"] = framework.value
-        buildsystem = framework.value
-    build = None
 
-    if Hardhat.is_supported(build_path) or buildsystem == BuildSystem.HARDHAT:
-        if (config := find_hardhat_config(build_path)) is None:
-            raise Exception("Can't locate hardhat config file")
+    build = CustomCryticCompile(build_path, **kwargs)
 
-        config_path = Path(build_path, config)
-    elif Foundry.is_supported(build_path) or buildsystem == BuildSystem.FOUNDRY:
-        config_path = Path(build_path, "foundry.toml")
-    else:
-        raise Exception("Can't locate config file")
-
-
-    if use_ir:
-        if Hardhat.is_supported(build_path):
-            extra_config = srcup.constants.get_extra_config(use_ir)
-            with open(config_path, "r") as f:
-                initial_config = f.read()
-            with open(config_path, "a") as f:
-                f.write(extra_config)
-
-            build = CryticCompile(build_path, **kwargs)
-
-            build_directory = Path(
-                build.target,
-                "artifacts",
-                "build-info",
-            )
-            extra_fields = get_extra_fields(build, build.target, build_directory, build.target, use_ir)
-            with open(config_path, "w") as f:
-                f.write(initial_config)
-        elif Foundry.is_supported(build_path) or buildsystem == BuildSystem.FOUNDRY:
-            with open(config_path, "r") as f:
-                prev_json_config = f.read()
-            with open(config_path, "w") as f:
-                f.write(subprocess.run(
-                        ["forge", "config", "--extra-output-files", "irOptimized"], cwd=build_path, stdout=subprocess.PIPE, check=True
-                    ).stdout.decode('utf8'))
-            build = CryticCompile(build_path, **kwargs)
-            with open(config_path, "w") as f:
-                f.write(prev_json_config)
-        elif Solc.is_supported(build_path):
-            build = CryticCompile(build_path, compile_custom_build="solc -o ./ --ir-optimized "+build_path)
-    elif not use_ir and Hardhat.is_supported(build_path):
-            extra_config = srcup.constants.get_extra_config(use_ir)
-            with open(config_path, "r") as f:
-                initial_config = f.read()
-            with open(config_path, "a") as f:
-                f.write(extra_config)
-
-            build = CryticCompile(build_path, **kwargs)
-
-            build_directory = os.path.join(
-                build.target,
-                "artifacts",
-                "build-info",
-            )
-            extra_fields = get_extra_fields(build, build.target, build_directory, build.target, use_ir)
-            
-            with open(config_path, "w") as f:
-                f.write(initial_config)
+    if build.platform.TYPE == Hardhat.TYPE:
+        build_directory = Path(
+            build.target,
+            "artifacts",
+            "build-info",
+        )
+        extra_fields = get_extra_fields(build, build.target, build_directory, build.target, use_ir)
 
     # crytic-compile automatically creates the `export_dir` directory if it does not exist
     export_path: str = build.export(export_format=export_format, export_dir=export_dir)[
