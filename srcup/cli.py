@@ -16,7 +16,7 @@ from subprocess import Popen, PIPE, TimeoutExpired
 from typing import Optional, cast
 
 from srcup.api import create_project, update_project
-from srcup.build import compile_build
+from srcup.build import ExtraFieldsOfSourceUnit, compile_build
 from srcup.extract import process
 from srcup.models import BuildSystem, ContractBytecode, ContractSource, YulIRCode
 from srcup.utils import get_latest_app_version, version_callback, __version__
@@ -68,7 +68,7 @@ def single(
         sys.exit(-1)
 
 
-async def asingle(artifact: CryticCompile, extra_fields: dict, use_ir: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
+async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
     contracts = process(artifact, extra_fields, use_ir)
 
     sources, bytecodes, yul_ir = cast(

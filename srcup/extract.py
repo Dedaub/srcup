@@ -102,8 +102,8 @@ def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, a
             yul_code = f.read()
     elif artifact.platform.TYPE == Type.HARDHAT:
         if extra_fields is not None:
-            extra_fields_of_file = extra_fields.get(source_unit.filename.absolute, {})
-            if raw_yul_code := extra_fields_of_file.contract_to_ir.get(contract_name):
+            extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
+            if extra_fields_of_file and (raw_yul_code := extra_fields_of_file.contract_to_ir.get(contract_name)):
                 yul_code = json.dumps(raw_yul_code)
 
     if yul_code:

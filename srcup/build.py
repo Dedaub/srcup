@@ -13,6 +13,27 @@ from crytic_compile.utils.zip import save_to_zip
 from srcup.models import BuildSystem
 from srcup.config_handlers import handle_hardhat_config, handle_foundry_config
 
+
+class ExtraFieldsOfSourceUnit:
+    def __init__(self, filename):
+        self.filename = filename
+        self.contracts = []
+        self.contract_to_ir = {}
+        self.contract_to_debug_info = {}
+        self.contract_to_im_ref = {}
+
+    def add_contract(self, contract_name):
+        self.contracts.append(contract_name)
+
+    def add_ir(self, contract_name, ir_code):
+        self.contract_to_ir[contract_name] = ir_code
+
+    def add_immutable_ref(self, contract_name, imm_ref):
+        self.contract_to_im_ref[contract_name] = imm_ref
+
+    def add_debug_info(self, contract_name, debug_info):
+        self.contract_to_debug_info[contract_name] = debug_info
+
 """
     Compiles a single build and exports it to the `export_dir` directory. Output can be compressed.
 
@@ -25,7 +46,6 @@ from srcup.config_handlers import handle_hardhat_config, handle_foundry_config
     - OSError or ValueError: If a related error is encountered
 
 """
-
 def compile_build(
     build_path: str,
     use_ir: bool,
@@ -34,7 +54,7 @@ def compile_build(
     compression_type: str | None = None,  # suppored: lzma, stored, deflated, bzip2
     export_dir: str = "watchdog",
     export_format: str = "archive",  # include source content in the exported json
-) -> tuple[CryticCompile, dict | None, str, str | None]:
+) -> tuple[CryticCompile, dict[str, ExtraFieldsOfSourceUnit], str, str | None]:
     class CustomCryticCompile(CryticCompile):
         def _compile(self, **kwargs: str) -> None:
             config_handlers: dict[Type, Callable[[str, bool], tuple[Path, str] | None]] = {
@@ -59,7 +79,7 @@ def compile_build(
                 with open(path, "w") as f:
                     f.write(content)
 
-    extra_fields = {}
+    extra_fields: dict[str, ExtraFieldsOfSourceUnit] = {}
     kwargs: dict[str, Any] = {"ignore_compile": use_cached_build}
     if framework:
         kwargs["compile_force_framework"] = framework.value
@@ -88,31 +108,10 @@ def compile_build(
     return build, extra_fields, export_path, zip_path
 
 
-class ExtraFieldsOfSOurceUnit():
-    def __init__(self, filename):
-        self.filename = filename
-        self.contracts = []
-        self.contract_to_ir = {}
-        self.contract_to_debug_info = {}
-        self.contract_to_im_ref = {}
-
-    def add_contract(self, contract_name):
-        self.contracts.append(contract_name)
-
-    def add_ir(self, contract_name, ir_code):
-        self.contract_to_ir[contract_name] = ir_code
-
-    def add_immutable_ref(self, contract_name, imm_ref):
-        self.contract_to_im_ref[contract_name] = imm_ref
-
-    def add_debug_info(self, contract_name, debug_info):
-        self.contract_to_debug_info[contract_name] = debug_info
-
-
 def get_extra_fields(
-    crytic_compile: "CryticCompile", target: str, build_directory: str, working_dir: str, use_ir: bool
-) -> dict | None:
-    src_to_extra_fields = {}
+    crytic_compile: "CryticCompile", target: str, build_directory: Path, working_dir: str, use_ir: bool
+) -> dict:
+    src_to_extra_fields: dict[str, ExtraFieldsOfSourceUnit] = {}
     files = sorted(
         os.listdir(build_directory), key=lambda x: os.path.getmtime(Path(build_directory, x))
     )
@@ -131,7 +130,7 @@ def get_extra_fields(
                         crytic_compile,
                         working_dir=working_dir,
                     )
-                    src_to_extra_fields[filename.absolute] = ExtraFieldsOfSOurceUnit(filename.absolute)
+                    src_to_extra_fields[filename.absolute] = ExtraFieldsOfSourceUnit(filename.absolute)
                     for original_contract_name, info in contracts_info.items():
                         contract_name = extract_name(original_contract_name)
                         src_to_extra_fields[filename.absolute].add_contract(contract_name)
@@ -154,8 +153,6 @@ def get_extra_fields(
     - OSError or ValueError: If a related error is encountered
 
 """
-
-
 def compile_builds(
     builds_path: str,
     framework: BuildSystem,
