@@ -77,8 +77,8 @@ def compile_build(
                 "artifacts",
                 "build-info",
             )
-            extra_fields = get_extraFields(build, build.target, build_directory, build.target, use_ir)
-            with open("hardhat.config.js", "w") as f:
+            extra_fields = get_extra_fields(build, build.target, build_directory, build.target, use_ir)
+            with open(config_path, "w") as f:
                 f.write(initial_config)
         elif Foundry.is_supported(build_path) or buildsystem == BuildSystem.FOUNDRY:
             with open(config_path, "r") as f:
@@ -106,7 +106,7 @@ def compile_build(
                 "artifacts",
                 "build-info",
             )
-            extra_fields = get_extraFields(build, build.target, build_directory, build.target, use_ir)
+            extra_fields = get_extra_fields(build, build.target, build_directory, build.target, use_ir)
             
             with open(config_path, "w") as f:
                 f.write(initial_config)
@@ -146,7 +146,7 @@ class ExtraFieldsOfSOurceUnit():
         self.contract_to_debug_info[contract_name] = debug_info
 
 
-def get_extraFields(
+def get_extra_fields(
     crytic_compile: "CryticCompile", target: str, build_directory: str, working_dir: str, use_ir: bool
 ) -> dict | None:
     src_to_extra_fields = {}

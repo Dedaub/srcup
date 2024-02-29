@@ -39,10 +39,11 @@ async def create_project(
             raise Exception(f"Project with name {name} already exists")
 
         url = f"{watchdog_api}/project"
+        payload=Payload(name=name, sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash)
 
         req = await session.post(
             url=url,
-            json=Payload(sources=sources, bytecode=bytecode, ir_code=ir_code, name=name, comment=comment, git_hash=git_hash)
+            json=payload
         )
 
         if req.status == 200:
@@ -70,7 +71,7 @@ async def update_project(
         model_config = ConfigDict(json_encoders={bytes: lambda bs: bs.hex()})
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
-        ir_code: list[YulIRCode | None]
+        ir_code: list[YulIRCode] | None
         comment: str
         git_hash: HexString
 
@@ -84,10 +85,11 @@ async def update_project(
             raise Exception(f"No project with name {name} exists")
 
         url = f"{watchdog_api}/project/{project_id}/version"
+        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash)
 
         req = await session.post(
             url=url,
-            json=Payload(sources=sources, bytecode=bytecode, ir_code=ir_code, comment=comment, git_hash=git_hash)
+            json=payload,
         )
 
         if req.status == 200:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from hashlib import md5
+import json
 from typing import cast
 
 from crytic_compile.compilation_unit import CompilationUnit
@@ -105,8 +106,8 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
                     extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
 
                     if extra_fields_of_file:
-                        im_ref = str(extra_fields_of_file.contract_to_im_ref.get(contract_name))
-                        debug_info = str(extra_fields_of_file.contract_to_debug_info.get(contract_name))
+                        im_ref = extra_fields_of_file.contract_to_im_ref.get(contract_name)
+                        debug_info = extra_fields_of_file.contract_to_debug_info.get(contract_name)
 
                 src = ContractSource(
                     contract_name=contract_name,
@@ -134,8 +135,8 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
                         for abi in source_unit.abi(contract_name)
                         if abi["type"] == "error"
                     ],
-                   immutable_references=im_ref,
-                   debug_info=debug_info,
+                    json_immutable_references=im_ref,
+                    json_function_debug_info=debug_info,
                 )
                 bytecode = ContractBytecode(
                     md5_bytecode=HexBytes(md5_bytecode),
@@ -163,7 +164,7 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
                         if extra_fields != None:
                             extra_fields_of_file = extra_fields.get(source_unit.filename.absolute, {})
                             if raw_yul_code := extra_fields_of_file.contract_to_ir.get(contract_name):
-                                yul_code = str(raw_yul_code)
+                                yul_code = json.dumps(raw_yul_code)
 
                     if yul_code:
                         yul_ir = YulIRCode(
