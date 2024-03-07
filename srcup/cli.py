@@ -89,13 +89,14 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
                 sources,
                 bytecodes,
                 yul_ir,
-                git_hash
+                git_hash,
+                {"use_ir": use_ir, "build_system": artifact.platform.NAME}
             )
             print(
                 f"Successfully created project #{project_id} with version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
         else:
-            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, git_hash)
+            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, git_hash, {"use_ir": use_ir, "build_system": artifact.platform.NAME})
             print(
                 f"Successfully updated project #{project_id} with new version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )

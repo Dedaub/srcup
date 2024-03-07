@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from typing import Any
 import aiohttp
 from pydantic import ConfigDict, BaseModel
 
@@ -14,7 +15,8 @@ async def create_project(
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
     ir_code: list[YulIRCode | None],
-    git_hash: HexString
+    git_hash: HexString,
+    metadata: dict[str, Any],
 ) -> tuple[int, int]:
     class Payload(BaseModel):
         # TODO[pydantic]: The following keys were removed: `json_encoders`.
@@ -27,6 +29,7 @@ async def create_project(
         name: str
         comment: str
         git_hash: HexString
+        metadata: dict[str, Any]
 
     async with aiohttp.ClientSession(
         headers={"x-api-key": api_key}, json_serialize=lambda x: x.json()
@@ -39,7 +42,7 @@ async def create_project(
             raise Exception(f"Project with name {name} already exists")
 
         url = f"{watchdog_api}/project"
-        payload=Payload(name=name, sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash)
+        payload=Payload(name=name, sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
 
         req = await session.post(
             url=url,
@@ -63,7 +66,8 @@ async def update_project(
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
     ir_code: list[YulIRCode | None],
-    git_hash: HexString
+    git_hash: HexString,
+    metadata: dict[str, Any],
 ) -> tuple[int, int]:
     class Payload(BaseModel):
         # TODO[pydantic]: The following keys were removed: `json_encoders`.
@@ -74,6 +78,7 @@ async def update_project(
         ir_code: list[YulIRCode] | None
         comment: str
         git_hash: HexString
+        metadata: dict[str, Any]
 
     async with aiohttp.ClientSession(
         headers={"x-api-key": api_key}, json_serialize=lambda x: x.json()
@@ -85,7 +90,7 @@ async def update_project(
             raise Exception(f"No project with name {name} exists")
 
         url = f"{watchdog_api}/project/{project_id}/version"
-        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash)
+        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
 
         req = await session.post(
             url=url,

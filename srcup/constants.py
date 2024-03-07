@@ -36,10 +36,15 @@ if (typeof module.exports == "undefined"){
     module.exports = {}
 }
 
+const base = module.exports.default ?? module.exports;
 
-if (Object.keys(module.exports.default.solidity).includes('compilers')){
-    module.exports.default.solidity.compilers.forEach((c) => patch_compiler_object(c));
+if (typeof base.solidity === "string" || base.solidity instanceof String) {
+    base.solidity = {version: base.solidity}
+}
+
+if (Object.keys(base.solidity).includes('compilers')){
+    base.solidity.compilers.forEach((c) => patch_compiler_object(c));
 } else {
-    patch_compiler_object(module.exports.default.solidity)
+    patch_compiler_object(base.solidity)
 }
 """
