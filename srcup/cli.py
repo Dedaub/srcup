@@ -16,9 +16,9 @@ from subprocess import Popen, PIPE, TimeoutExpired
 from typing import Optional, cast
 
 from srcup.api import create_project, update_project
-from srcup.build import compile_build
+from srcup.build import ExtraFieldsOfSourceUnit, compile_build
 from srcup.extract import process
-from srcup.models import BuildSystem, ContractBytecode, ContractSource
+from srcup.models import BuildSystem, ContractBytecode, ContractSource, YulIRCode
 from srcup.utils import get_latest_app_version, version_callback, __version__
 
 
@@ -40,7 +40,9 @@ def single(
     owner_username: str = typer.Option('', help="Username of project owner. Ignored when --init is also present"),
     name: str = typer.Option('', help="Project name"),
     comment: str = typer.Option('', help="Comment for the project"),
-    app_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app", is_eager=True, callback=version_callback)
+    app_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app", is_eager=True, callback=version_callback),
+    use_ir: bool = typer.Option(False, help="Analyse Yul-IR instead of EVM bytecode"),
+    debug_info: bool = typer.Option(True, help="Extract debug info from the build artifacts. This can help recover some high-level names."),
 ):
     latest_app_version = asyncio.run(get_latest_app_version())
     if not latest_app_version:
@@ -55,24 +57,33 @@ def single(
 
     try:
         target = os.path.abspath(target)
-        build, *_ = compile_build(target, framework, cache, "lzma")
-        asyncio.run(asingle(build, api_url, api_key, init, owner_username, name, comment, target))
+        build, extra_fields, *_ = compile_build(target, use_ir, debug_info, framework, cache, "lzma")
+        asyncio.run(asingle(build, extra_fields, use_ir, debug_info, api_url, api_key, init, owner_username, name, comment, target))
     except InvalidCompilation as e:
         print(f"Unable to perform compilation.\n")
-        print("""    
-             Check the README file: 
+        print("""
+             Check the README file:
             'srcup assumes that the project to be uploaded has the default file layout of the underlying build system!'
             """)
         print(f"Error message was: {str(e)}")
         sys.exit(-1)
 
 
-async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
-    contracts = process(artifact)
+async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, get_debug_info: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
+    contracts = process(artifact, extra_fields, use_ir, get_debug_info)
 
-    sources, bytecodes = cast(
-        tuple[list[ContractSource], list[ContractBytecode]], tuple(zip(*contracts))
-    )
+    sources: list[ContractSource] = []
+    bytecodes: list[ContractBytecode] = []
+    yul_ir: list[YulIRCode | None] = []
+
+    if len(contracts):
+        sources, bytecodes, yul_ir = cast(
+            tuple[list[ContractSource], list[ContractBytecode], list[YulIRCode | None]], tuple(zip(*contracts))
+        )
+    else:
+        print("WARNING: Discovered 0 contracts -- are you using non-default build output directories?")
+        sources, bytecodes, yul_ir = [], [], []
+
     git_hash = await calc_hash(bytecodes, target)
 
     if not name:
@@ -87,13 +98,15 @@ async def asingle(artifact: CryticCompile, api_url: str, api_key: str,  init: bo
                 comment,
                 sources,
                 bytecodes,
-                git_hash
+                yul_ir,
+                git_hash,
+                {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info}
             )
             print(
                 f"Successfully created project #{project_id} with version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
         else:
-            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, git_hash)
+            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, git_hash, {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info})
             print(
                 f"Successfully updated project #{project_id} with new version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )

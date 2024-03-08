@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
+from typing import Any
 import aiohttp
 from pydantic import ConfigDict, BaseModel
 
-from srcup.models import ContractBytecode, ContractSource, HexString
+from srcup.models import ContractBytecode, ContractSource, HexString, YulIRCode
 
 
 async def create_project(
@@ -13,8 +14,10 @@ async def create_project(
     comment: str,
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
-    git_hash: HexString
-) -> int:
+    ir_code: list[YulIRCode | None],
+    git_hash: HexString,
+    metadata: dict[str, Any],
+) -> tuple[int, int]:
     class Payload(BaseModel):
         # TODO[pydantic]: The following keys were removed: `json_encoders`.
         # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
@@ -22,9 +25,11 @@ async def create_project(
 
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
+        ir_code: list[YulIRCode | None]
         name: str
         comment: str
         git_hash: HexString
+        metadata: dict[str, Any]
 
     async with aiohttp.ClientSession(
         headers={"x-api-key": api_key}, json_serialize=lambda x: x.json()
@@ -37,10 +42,11 @@ async def create_project(
             raise Exception(f"Project with name {name} already exists")
 
         url = f"{watchdog_api}/project"
+        payload=Payload(name=name, sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
 
         req = await session.post(
             url=url,
-            json=Payload(sources=sources, bytecode=bytecode, name=name, comment=comment, git_hash=git_hash)
+            json=payload
         )
 
         if req.status == 200:
@@ -59,7 +65,9 @@ async def update_project(
     comment: str,
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
-    git_hash: HexString
+    ir_code: list[YulIRCode | None],
+    git_hash: HexString,
+    metadata: dict[str, Any],
 ) -> tuple[int, int]:
     class Payload(BaseModel):
         # TODO[pydantic]: The following keys were removed: `json_encoders`.
@@ -67,8 +75,10 @@ async def update_project(
         model_config = ConfigDict(json_encoders={bytes: lambda bs: bs.hex()})
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
+        ir_code: list[YulIRCode] | None
         comment: str
         git_hash: HexString
+        metadata: dict[str, Any]
 
     async with aiohttp.ClientSession(
         headers={"x-api-key": api_key}, json_serialize=lambda x: x.json()
@@ -80,10 +90,11 @@ async def update_project(
             raise Exception(f"No project with name {name} exists")
 
         url = f"{watchdog_api}/project/{project_id}/version"
+        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
 
         req = await session.post(
             url=url,
-            json=Payload(sources=sources, bytecode=bytecode, comment=comment, git_hash=git_hash)
+            json=payload,
         )
 
         if req.status == 200:

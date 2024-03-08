@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 
 from hashlib import md5
+import json
 from typing import cast
 
 from crytic_compile.compilation_unit import CompilationUnit
 from crytic_compile.crytic_compile import CryticCompile
+from crytic_compile.platform.types import Type
 from crytic_compile.source_unit import SourceUnit
 from eth_hash.auto import keccak
 
-from srcup.models import ContractBytecode, ContractSource, HexBytes
+import os
+from .models import ContractBytecode, ContractSource, HexBytes, YulIRCode
 
 
 def handle_type(input: dict) -> str:
@@ -65,10 +68,60 @@ def generate_remapping(references: list[str], file_ids: set[str]) -> dict[str, s
         )
     }
 
+def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug_info: bool) -> tuple[dict | None, dict | None, YulIRCode | None]:
+    im_ref, debug_info, yul_ir = None, None, None
 
-def process(artifact: CryticCompile) -> list[tuple[ContractSource, ContractBytecode]]:
+    if not get_debug_info and not use_ir:
+        return im_ref, debug_info, yul_ir
 
-    contracts: list[tuple[ContractSource, ContractBytecode]] = []
+    # If we are building with Hardhat, we can extract the extra fields
+    if artifact.platform.TYPE == Type.HARDHAT:
+        extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
+
+        if extra_fields_of_file:
+            im_ref = extra_fields_of_file.contract_to_im_ref.get(contract_name)
+            debug_info = extra_fields_of_file.contract_to_debug_info.get(contract_name)
+
+    # Nothing else to do for the other systems (for now)
+    if not use_ir:
+        return im_ref, debug_info, yul_ir
+
+    # Try and extract yul
+    yul_code = None
+    if artifact.platform.TYPE == Type.FOUNDRY:
+        output_dir = os.path.join(artifact.working_dir, "out")
+        filename_only = source_unit.filename.short.split("/")[-1]
+        contract_output = contract_name + ".iropt"
+        optimized_ir_filename = os.path.join(output_dir, filename_only, contract_output)
+
+        if os.path.isfile(optimized_ir_filename):
+            with open(optimized_ir_filename, "r") as f:
+                yul_code = f.read()
+        else:
+            print(f"Could not find IR optimized output for {contract_name}")
+    elif artifact.platform.TYPE == Type.SOLC:
+        optimized_ir_filename = os.path.join(artifact.working_dir, contract_name+"_opt.yul")
+        with open(optimized_ir_filename, "r") as f:
+            yul_code = f.read()
+    elif artifact.platform.TYPE == Type.HARDHAT:
+        if extra_fields is not None:
+            extra_fields_of_file = extra_fields.get(source_unit.filename.absolute)
+            if extra_fields_of_file and (raw_yul_code := extra_fields_of_file.contract_to_ir.get(contract_name)):
+                yul_code = json.dumps(raw_yul_code)
+
+    if yul_code:
+        yul_ir = YulIRCode(
+            md5_bytecode=HexBytes(md5_bytecode),
+            codehash=HexBytes(keccak(bytes(yul_code, 'utf8'))),
+            yul_ast=yul_code
+        )
+
+    return im_ref, debug_info, yul_ir
+
+
+
+def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug_info: bool) -> list[tuple[ContractSource, ContractBytecode, YulIRCode | None]]:
+    contracts: list[tuple[ContractSource, ContractBytecode, YulIRCode | None]] = []
 
     for comp_unit in artifact.compilation_units.values():
         file_mapping = create_file_mapping(comp_unit)
@@ -96,6 +149,8 @@ def process(artifact: CryticCompile) -> list[tuple[ContractSource, ContractBytec
 
                 md5_bytecode = md5(runtime_bytecode).digest()
 
+                im_ref, debug_info, yul_ir = extract_extra_fields(md5_bytecode, contract_name, source_unit, artifact, extra_fields, use_ir, get_debug_info)
+
                 src = ContractSource(
                     contract_name=contract_name,
                     contract_path=source_unit.filename.short,
@@ -122,14 +177,16 @@ def process(artifact: CryticCompile) -> list[tuple[ContractSource, ContractBytec
                         for abi in source_unit.abi(contract_name)
                         if abi["type"] == "error"
                     ],
+                    json_immutable_references=im_ref,
+                    json_function_debug_info=debug_info,
                 )
-
                 bytecode = ContractBytecode(
                     md5_bytecode=HexBytes(md5_bytecode),
                     codehash=HexBytes(keccak(runtime_bytecode)),
                     bytecode=HexBytes(runtime_bytecode),
                 )
 
-                contracts.append((src, bytecode))
+                contracts.append((src, bytecode, yul_ir))
 
     return contracts
+
