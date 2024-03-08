@@ -71,9 +71,16 @@ def single(
 async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
     contracts = process(artifact, extra_fields, use_ir)
 
-    sources, bytecodes, yul_ir = cast(
-        tuple[list[ContractSource], list[ContractBytecode], list[YulIRCode | None]], tuple(zip(*contracts))
-    )
+    sources, bytecodes, yul_ir = [], [], []
+
+    if len(contracts):
+        sources, bytecodes, yul_ir = cast(
+            tuple[list[ContractSource], list[ContractBytecode], list[YulIRCode | None]], tuple(zip(*contracts))
+        )
+    else:
+        print("WARNING: Discovered 0 contracts -- are you using non-default build output directories?")
+        sources, bytecodes, yul_ir = [], [], []
+
     git_hash = await calc_hash(bytecodes, target)
 
     if not name:
