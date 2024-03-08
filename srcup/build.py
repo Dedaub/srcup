@@ -47,6 +47,7 @@ class ExtraFieldsOfSourceUnit:
 def compile_build(
     build_path: str,
     use_ir: bool,
+    extract_debug: bool,
     framework: BuildSystem | None,
     use_cached_build: bool = False,
     compression_type: str | None = None,  # suppored: lzma, stored, deflated, bzip2
@@ -55,6 +56,9 @@ def compile_build(
 ) -> tuple[CryticCompile, dict[str, ExtraFieldsOfSourceUnit], str, str | None]:
     class CustomCryticCompile(CryticCompile):
         def _compile(self, **kwargs: str) -> None:
+            if not (use_ir or extract_debug):
+                return super()._compile(**kwargs)
+
             config_handlers: dict[Type, Callable[[str, bool], tuple[Path, str] | None]] = {
                 Type.HARDHAT: handle_hardhat_config,
                 Type.FOUNDRY: handle_foundry_config,
@@ -64,7 +68,7 @@ def compile_build(
 
             original_config = handler(build_path, use_ir)
 
-            if self.platform.TYPE == Solc:
+            if self.platform.TYPE == Solc and use_ir:
                 kwargs["compile_custom_build"] = "solc -o ./ --ir-optimized " + build_path
 
             try:

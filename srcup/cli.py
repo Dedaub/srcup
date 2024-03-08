@@ -41,7 +41,8 @@ def single(
     name: str = typer.Option('', help="Project name"),
     comment: str = typer.Option('', help="Comment for the project"),
     app_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app", is_eager=True, callback=version_callback),
-    use_ir: bool = typer.Option(False, help="Analyse Yul-IR instead of EVM bytecode")
+    use_ir: bool = typer.Option(False, help="Analyse Yul-IR instead of EVM bytecode"),
+    debug_info: bool = typer.Option(True, help="Extract debug info from the build artifacts. This can help recover some high-level names."),
 ):
     latest_app_version = asyncio.run(get_latest_app_version())
     if not latest_app_version:
@@ -56,8 +57,8 @@ def single(
 
     try:
         target = os.path.abspath(target)
-        build, extra_fields, *_ = compile_build(target, use_ir, framework, cache, "lzma")
-        asyncio.run(asingle(build, extra_fields, use_ir, api_url, api_key, init, owner_username, name, comment, target))
+        build, extra_fields, *_ = compile_build(target, use_ir, debug_info, framework, cache, "lzma")
+        asyncio.run(asingle(build, extra_fields, use_ir, debug_info, api_url, api_key, init, owner_username, name, comment, target))
     except InvalidCompilation as e:
         print(f"Unable to perform compilation.\n")
         print("""
@@ -68,10 +69,12 @@ def single(
         sys.exit(-1)
 
 
-async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
-    contracts = process(artifact, extra_fields, use_ir)
+async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, get_debug_info: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
+    contracts = process(artifact, extra_fields, use_ir, get_debug_info)
 
-    sources, bytecodes, yul_ir = [], [], []
+    sources: list[ContractSource] = []
+    bytecodes: list[ContractBytecode] = []
+    yul_ir: list[YulIRCode | None] = []
 
     if len(contracts):
         sources, bytecodes, yul_ir = cast(
@@ -97,13 +100,13 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
                 bytecodes,
                 yul_ir,
                 git_hash,
-                {"use_ir": use_ir, "build_system": artifact.platform.NAME}
+                {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info}
             )
             print(
                 f"Successfully created project #{project_id} with version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
         else:
-            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, git_hash, {"use_ir": use_ir, "build_system": artifact.platform.NAME})
+            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, git_hash, {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info})
             print(
                 f"Successfully updated project #{project_id} with new version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )

@@ -68,8 +68,11 @@ def generate_remapping(references: list[str], file_ids: set[str]) -> dict[str, s
         )
     }
 
-def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> tuple[dict | None, dict | None, YulIRCode | None]:
+def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug_info: bool) -> tuple[dict | None, dict | None, YulIRCode | None]:
     im_ref, debug_info, yul_ir = None, None, None
+
+    if not get_debug_info and not use_ir:
+        return im_ref, debug_info, yul_ir
 
     # If we are building with Hardhat, we can extract the extra fields
     if artifact.platform.TYPE == Type.HARDHAT:
@@ -117,7 +120,7 @@ def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, a
 
 
 
-def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[tuple[ContractSource, ContractBytecode, YulIRCode | None]]:
+def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug_info: bool) -> list[tuple[ContractSource, ContractBytecode, YulIRCode | None]]:
     contracts: list[tuple[ContractSource, ContractBytecode, YulIRCode | None]] = []
 
     for comp_unit in artifact.compilation_units.values():
@@ -146,7 +149,7 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool) -> list[t
 
                 md5_bytecode = md5(runtime_bytecode).digest()
 
-                im_ref, debug_info, yul_ir = extract_extra_fields(md5_bytecode, contract_name, source_unit, artifact, extra_fields, use_ir)
+                im_ref, debug_info, yul_ir = extract_extra_fields(md5_bytecode, contract_name, source_unit, artifact, extra_fields, use_ir, get_debug_info)
 
                 src = ContractSource(
                     contract_name=contract_name,
