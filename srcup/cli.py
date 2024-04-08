@@ -15,7 +15,7 @@ from packaging import version
 from subprocess import Popen, PIPE, TimeoutExpired
 from typing import Optional, cast
 
-from srcup.api import create_project, update_project
+from srcup.api import create_project, update_project, get_entity_id_from_name
 from srcup.build import ExtraFieldsOfSourceUnit, compile_build
 from srcup.extract import process
 from srcup.models import BuildSystem, ContractBytecode, ContractSource, YulIRCode
@@ -45,15 +45,15 @@ def single(
     debug_info: bool = typer.Option(True, help="Extract debug info from the build artifacts. This can help recover some high-level names."),
 ):
     latest_app_version = asyncio.run(get_latest_app_version())
-    if not latest_app_version:
-        print("Warning: Failed to retrieve the latest available version of the app")
-
-    elif version.parse(__version__) < version.parse(latest_app_version):
-        print(f'Warning: A new version is available ({latest_app_version})\n')
-        print(f'Please, update the app to continue:')
-        print(f'  For pipx installation run:      pipx upgrade srcup')
-        print(f'  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup')
-        return
+    # if not latest_app_version:
+    #     print("Warning: Failed to retrieve the latest available version of the app")
+    #
+    # elif version.parse(__version__) < version.parse(latest_app_version):
+    #     print(f'Warning: A new version is available ({latest_app_version})\n')
+    #     print(f'Please, update the app to continue:')
+    #     print(f'  For pipx installation run:      pipx upgrade srcup')
+    #     print(f'  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup')
+    #     return
 
     try:
         target = os.path.abspath(target)
@@ -91,6 +91,8 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
 
     try:
         if init:
+            entity_id, name = await get_entity_id_from_name(api_url, api_key, name)
+
             project_id, version_sequence = await create_project(
                 api_url,
                 api_key,
@@ -100,6 +102,7 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
                 bytecodes,
                 yul_ir,
                 git_hash,
+                entity_id,
                 {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info}
             )
             print(

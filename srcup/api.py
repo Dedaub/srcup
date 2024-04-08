@@ -16,6 +16,7 @@ async def create_project(
     bytecode: list[ContractBytecode],
     ir_code: list[YulIRCode | None],
     git_hash: HexString,
+    entity_id: int,
     metadata: dict[str, Any],
 ) -> tuple[int, int]:
     class Payload(BaseModel):
@@ -29,6 +30,7 @@ async def create_project(
         name: str
         comment: str
         git_hash: HexString
+        entity_id: int | None = None
         metadata: dict[str, Any]
 
     async with aiohttp.ClientSession(
@@ -42,7 +44,10 @@ async def create_project(
             raise Exception(f"Project with name {name} already exists")
 
         url = f"{watchdog_api}/project"
-        payload=Payload(name=name, sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
+        payload=Payload(name=name, sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x],
+                        comment=comment, git_hash=git_hash,
+                        entity_id=entity_id,
+                        metadata=metadata)
 
         req = await session.post(
             url=url,
@@ -90,7 +95,7 @@ async def update_project(
             raise Exception(f"No project with name {name} exists")
 
         url = f"{watchdog_api}/project/{project_id}/version"
-        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
+        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash,  metadata=metadata)
 
         req = await session.post(
             url=url,
@@ -126,3 +131,27 @@ async def get_project_id(watchdog_api: str,
             return await req.json()
         else:
             return None  # project does not exist
+
+
+async def get_entity_id_from_name(watchdog_api: str,
+                         api_key: str,
+                         name: str,
+                         ) -> int | None:
+
+    if name and '/' in name:
+        if name.count('/') > 1:
+            raise Exception("Invalid name. Names can have at most one / character")
+
+        parts = name.split("/", 1)
+        name = parts[1]
+        username = parts[0]
+
+        async with aiohttp.ClientSession(headers={"x-api-key": api_key}) as session:
+            url = f"{watchdog_api}/organization/find/{username}"
+
+            req = await session.get(url=url)
+
+            if req.status == 200:
+                return await req.json(), name
+
+    return None, name  # project does not exist
