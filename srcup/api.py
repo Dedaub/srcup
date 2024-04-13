@@ -146,12 +146,13 @@ async def get_entity_id_from_name(watchdog_api: str,
         name = parts[1]
         username = parts[0]
 
-        async with aiohttp.ClientSession(headers={"x-api-key": api_key}) as session:
-            url = f"{watchdog_api}/organization/find/{username}"
+        async with (aiohttp.ClientSession(headers={"x-api-key": api_key}) as session):
+            url = f"{watchdog_api}/entity/{username}"
 
             req = await session.get(url=url)
 
             if req.status == 200:
-                return await req.json(), name
+                ret = await req.json()
+                return ret['entity_id'], ret['username']
 
     return None, name  # project does not exist
