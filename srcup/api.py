@@ -153,6 +153,6 @@ async def get_entity_id_from_name(watchdog_api: str,
 
             if req.status == 200:
                 ret = await req.json()
-                return ret['entity_id'], ret['username']
+                return ret['entity_id'], name
 
     return None, name  # project does not exist
