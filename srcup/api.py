@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Any
+from typing import Any, Tuple
 import aiohttp
 from pydantic import ConfigDict, BaseModel
 
@@ -16,7 +16,7 @@ async def create_project(
     bytecode: list[ContractBytecode],
     ir_code: list[YulIRCode | None],
     git_hash: HexString,
-    entity_id: int,
+    entity_id: int | None,
     metadata: dict[str, Any],
 ) -> tuple[int, int]:
     class Payload(BaseModel):
@@ -133,26 +133,33 @@ async def get_project_id(watchdog_api: str,
             return None  # project does not exist
 
 
-async def get_entity_id_from_name(watchdog_api: str,
-                         api_key: str,
-                         name: str,
-                         ) -> int | None:
-
+def extract_organization_from_name(name) -> tuple[str, str]:
     if name and '/' in name:
         if name.count('/') > 1:
             raise Exception("Invalid name. Names can have at most one / character")
 
         parts = name.split("/", 1)
-        name = parts[1]
-        username = parts[0]
+        project_name = parts[1]
+        org_name = parts[0]
 
-        async with (aiohttp.ClientSession(headers={"x-api-key": api_key}) as session):
-            url = f"{watchdog_api}/entity/{username}"
+        return org_name, project_name
 
-            req = await session.get(url=url)
+    return '',  name
 
-            if req.status == 200:
-                ret = await req.json()
-                return ret['entity_id'], name
 
-    return None, name  # project does not exist
+async def get_org_entity_id(watchdog_api: str, api_key: str, org_name: str) -> int:
+
+    async with (aiohttp.ClientSession(headers={"x-api-key": api_key}) as session):
+        url = f"{watchdog_api}/entity/{org_name}"
+
+        req = await session.get(url=url)
+
+        if req.status == 200:
+            ret = await req.json()
+            if ret['entity_id'] is None:
+                raise Exception(f"There is no organisation with the name {org_name}")
+            return int(ret['entity_id'])
+        else:
+            error = await req.text()
+            raise Exception(error)
+
