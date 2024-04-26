@@ -43,14 +43,20 @@ any case, the framework parameter refers to the tool used to **build** the proje
 framework, `srcup` should be able to successfully infer the correct framework.
   * `init` indicates that this is the initial version of your project: the first time you add the project to Dedaub.
   * `name` is a name you can freely choose for your project
-4. Each project can have multiple versions. You can upload another version of the same project using a similar command:
+4. Projects can be assigned to an organization. The first time you upload a project you can define the name of the organization that should own the project:
+For example, run 
+  * `srcup --api-key <api_key> --framework <project_framework> --init --organization Dedaub --name <project_name> <project location>`  or 
+  * `srcup --api-key <api_key> --framework <project_framework> --init --name Dedaub/<project_name> <project location>` 
+to declare that this project should be owned by the `Dedaub` organization
+
+5. Each project can have multiple versions. You can upload another version of the same project using a similar command:
  * `srcup --api-key <api_key> --framework <project_framework>  --name <project_name>` (note the absence of init). The project
 name should be the same as in the initial version
-5. Commit messages can be added too, every time a new version is uploaded:
+6. Commit messages can be added too, every time a new version is uploaded:
   * `srcup --api-key <api_key> --framework <project_framework>  --comment Message --name <project_name> <project location>`
-6. Projects can be shared too. If you want to upload a version of a project for which you have WRITE access you can do:
+7. Projects can be shared too. If you want to upload a version of a project for which you have WRITE access you can do:
  * `srcup --api-key <api_key> --framework <project_framework>  --owner_username <username> --name <project_name> <project location>`
-7. The CLI tool will compile and upload the artifacts to Dedaub. This might take a while. Upon completion, a
+8. The CLI tool will compile and upload the artifacts to Dedaub. This might take a while. Upon completion, a
 Dedaub project URL will be provided.
 
 ## A note regarding the layout of the project

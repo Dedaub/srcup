@@ -15,7 +15,7 @@ from packaging import version
 from subprocess import Popen, PIPE, TimeoutExpired
 from typing import Optional, cast
 
-from srcup.api import create_project, update_project
+from srcup.api import create_project, update_project, get_org_entity_id, extract_organization_from_name
 from srcup.build import ExtraFieldsOfSourceUnit, compile_build
 from srcup.extract import process
 from srcup.models import BuildSystem, ContractBytecode, ContractSource, YulIRCode
@@ -32,6 +32,7 @@ def single(
     framework: Optional[BuildSystem] = typer.Option(None),
     cache: bool = typer.Option(False, help="Use build cache"),
     init: bool = typer.Option(False, help="Is this a new project?"),
+    organization: str = typer.Option(default='', help="Organization to which the project belongs. Ignored when --init is not present"),
     api_url: str = typer.Option(
           "https://api.dedaub.com/api",
         help="URL of the Dedaub API"
@@ -58,7 +59,7 @@ def single(
     try:
         target = os.path.abspath(target)
         build, extra_fields, *_ = compile_build(target, use_ir, debug_info, framework, cache, "lzma")
-        asyncio.run(asingle(build, extra_fields, use_ir, debug_info, api_url, api_key, init, owner_username, name, comment, target))
+        asyncio.run(asingle(build, extra_fields, use_ir, debug_info, api_url, api_key, init, organization, owner_username, name, comment, target))
     except InvalidCompilation as e:
         print(f"Unable to perform compilation.\n")
         print("""
@@ -69,7 +70,7 @@ def single(
         sys.exit(-1)
 
 
-async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, get_debug_info: bool, api_url: str, api_key: str,  init: bool, owner_username: str, name: str, comment: str, target: str):
+async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, get_debug_info: bool, api_url: str, api_key: str,  init: bool, organization: str, owner_username: str, name: str, comment: str, target: str):
     contracts = process(artifact, extra_fields, use_ir, get_debug_info)
 
     sources: list[ContractSource] = []
@@ -91,6 +92,13 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
 
     try:
         if init:
+            if not organization:
+                organization, name = extract_organization_from_name(name)
+
+            entity_id: int | None = None
+            if organization:
+                entity_id = await get_org_entity_id(api_url, api_key, organization)
+
             project_id, version_sequence = await create_project(
                 api_url,
                 api_key,
@@ -100,6 +108,8 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
                 bytecodes,
                 yul_ir,
                 git_hash,
+                organization,
+                entity_id,
                 {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info}
             )
             print(
