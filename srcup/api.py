@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Any, Tuple
+from typing import Any
 import aiohttp
 from pydantic import ConfigDict, BaseModel
 
@@ -16,6 +16,7 @@ async def create_project(
     bytecode: list[ContractBytecode],
     ir_code: list[YulIRCode | None],
     git_hash: HexString,
+    organization: str,
     entity_id: int | None,
     metadata: dict[str, Any],
 ) -> tuple[int, int]:
@@ -38,7 +39,7 @@ async def create_project(
     ) as session:
         print("Uploading...")
 
-        project_id = await get_project_id(watchdog_api, api_key, name)
+        project_id = await get_project_id(watchdog_api, api_key, name, organization)
 
         if project_id is not None:
             raise Exception(f"Project with name {name} already exists")
@@ -95,7 +96,7 @@ async def update_project(
             raise Exception(f"No project with name {name} exists")
 
         url = f"{watchdog_api}/project/{project_id}/version"
-        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash,  metadata=metadata)
+        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
 
         req = await session.post(
             url=url,

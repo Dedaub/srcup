@@ -32,7 +32,7 @@ def single(
     framework: Optional[BuildSystem] = typer.Option(None),
     cache: bool = typer.Option(False, help="Use build cache"),
     init: bool = typer.Option(False, help="Is this a new project?"),
-    organization: str = typer.Option(default='', help = "The name of the organization for which you are creating the project.  Ignored when --init is not present"),
+    organization: str = typer.Option(default='', help="Organization to which the project belongs. Ignored when --init is not present"),
     api_url: str = typer.Option(
           "https://api.dedaub.com/api",
         help="URL of the Dedaub API"
@@ -70,7 +70,7 @@ def single(
         sys.exit(-1)
 
 
-async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, get_debug_info: bool, api_url: str, api_key: str,  init: bool, organization:str, owner_username: str, name: str, comment: str, target: str):
+async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, get_debug_info: bool, api_url: str, api_key: str,  init: bool, organization: str, owner_username: str, name: str, comment: str, target: str):
     contracts = process(artifact, extra_fields, use_ir, get_debug_info)
 
     sources: list[ContractSource] = []
@@ -93,7 +93,7 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
     try:
         if init:
             if not organization:
-                organization, project_name = extract_organization_from_name(name)
+                organization, name = extract_organization_from_name(name)
 
             entity_id: int | None = None
             if organization:
@@ -108,6 +108,7 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
                 bytecodes,
                 yul_ir,
                 git_hash,
+                organization,
                 entity_id,
                 {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info}
             )
