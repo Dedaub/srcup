@@ -26,8 +26,8 @@ function patch_compiler_object(obj) {
     }
 
     if (patchIr){
-        if (!outputs.includes('irOptimizedAst')){
-            outputs.push('irOptimizedAst');
+        if (!outputs.includes('irOptimized')){
+            outputs.push('irOptimized');
         }
     }
 }

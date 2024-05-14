@@ -137,7 +137,7 @@ def get_extra_fields(
                         contract_name = extract_name(original_contract_name)
                         src_to_extra_fields[filename.absolute].add_contract(contract_name)
                         if use_ir:
-                            src_to_extra_fields[filename.absolute].add_ir(contract_name, info.get("irOptimizedAst"))
+                            src_to_extra_fields[filename.absolute].add_ir(contract_name, info.get("irOptimized"))
                         src_to_extra_fields[filename.absolute].add_immutable_ref(contract_name, info["evm"]["deployedBytecode"].get("immutableReferences"))
                         src_to_extra_fields[filename.absolute].add_debug_info(contract_name, info["evm"]["deployedBytecode"].get("functionDebugData"))
     return src_to_extra_fields

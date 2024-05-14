@@ -5,7 +5,7 @@ import subprocess
 import srcup.constants
 
 def find_hardhat_config(target: str) -> str | None:
-    for candidate in ("hardhat.config.js", "hardhat.config.ts", "hardhat.config.cjs"):  
+    for candidate in ("hardhat.config.js", "hardhat.config.ts", "hardhat.config.cjs"):
         if os.path.isfile(os.path.join(target, candidate)):
             return candidate
 
