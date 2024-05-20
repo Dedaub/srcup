@@ -72,6 +72,7 @@ def compile_build(
                 kwargs["compile_custom_build"] = "solc -o ./ --ir-optimized " + build_path
 
             try:
+                print("Building project...")
                 return super()._compile(**kwargs)
             finally:
                 if not original_config:
