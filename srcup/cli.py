@@ -51,10 +51,9 @@ def single(
 
     elif version.parse(__version__) < version.parse(latest_app_version):
         print(f'Warning: A new version is available ({latest_app_version})\n')
-        print(f'Please, update the app to continue:')
+        print(f'Please, update the app:')
         print(f'  For pipx installation run:      pipx upgrade srcup')
         print(f'  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup')
-        return
 
     try:
         target = os.path.abspath(target)
