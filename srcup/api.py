@@ -4,7 +4,7 @@ from typing import Any
 import aiohttp
 from pydantic import ConfigDict, BaseModel
 
-from srcup.models import ContractBytecode, ContractSource, HexString, YulIRCode
+from srcup.models import ContractBytecode, ContractInitCode, ContractSource, HexString, YulIRCode
 
 
 async def create_project(
@@ -15,6 +15,7 @@ async def create_project(
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
     ir_code: list[YulIRCode | None],
+    init_code: list[ContractInitCode | None],
     git_hash: HexString,
     organization: str,
     entity_id: int | None,
@@ -28,6 +29,7 @@ async def create_project(
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
         ir_code: list[YulIRCode | None]
+        init_code: list[ContractInitCode | None]
         name: str
         comment: str
         git_hash: HexString
@@ -45,7 +47,7 @@ async def create_project(
             raise Exception(f"Project with name {name} already exists")
 
         url = f"{watchdog_api}/project"
-        payload=Payload(name=name, sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x],
+        payload=Payload(name=name, sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], init_code=[x for x in init_code if x],
                         comment=comment, git_hash=git_hash,
                         entity_id=entity_id,
                         metadata=metadata)
@@ -72,6 +74,7 @@ async def update_project(
     sources: list[ContractSource],
     bytecode: list[ContractBytecode],
     ir_code: list[YulIRCode | None],
+    init_code: list[ContractInitCode | None],
     git_hash: HexString,
     metadata: dict[str, Any],
 ) -> tuple[int, int]:
@@ -82,6 +85,7 @@ async def update_project(
         sources: list[ContractSource]
         bytecode: list[ContractBytecode]
         ir_code: list[YulIRCode] | None
+        init_code: list[ContractInitCode | None]
         comment: str
         git_hash: HexString
         metadata: dict[str, Any]
@@ -96,7 +100,7 @@ async def update_project(
             raise Exception(f"No project with name {name} exists")
 
         url = f"{watchdog_api}/project/{project_id}/version"
-        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
+        payload=Payload(sources=sources, bytecode=bytecode, ir_code=[x for x in ir_code if x], init_code=[x for x in init_code if x], comment=comment, git_hash=git_hash, metadata=metadata)
 
         req = await session.post(
             url=url,

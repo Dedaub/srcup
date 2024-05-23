@@ -76,6 +76,17 @@ class ContractBytecode(BaseModel):
     _ts: datetime | None = None
 
 
+class ContractInitCode(BaseModel):
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_encoders={bytes: lambda bs: f"0x{bs.hex()}"})
+
+    md5_bytecode: HexBytes
+    init_code: HexBytes
+    origin: str = "watchdog"
+    _ts: datetime | None = None
+
+
 class YulIRCode(BaseModel):
     model_config = ConfigDict(json_encoders={bytes: lambda bs: f"0x{bs.hex()}"})
 

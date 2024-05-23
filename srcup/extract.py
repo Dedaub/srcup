@@ -11,7 +11,7 @@ from crytic_compile.source_unit import SourceUnit
 from eth_hash.auto import keccak
 
 import os
-from .models import ContractBytecode, ContractSource, HexBytes, YulIRCode
+from .models import ContractBytecode, ContractInitCode, ContractSource, HexBytes, YulIRCode
 
 
 def handle_type(input: dict) -> str:
@@ -120,7 +120,7 @@ def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, a
 
 
 
-def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug_info: bool) -> list[tuple[ContractSource, ContractBytecode, YulIRCode | None]]:
+def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug_info: bool) -> list[tuple[ContractSource, ContractBytecode, YulIRCode | None, ContractInitCode | None]]:
     contracts: list[tuple[ContractSource, ContractBytecode, YulIRCode | None]] = []
 
     for comp_unit in artifact.compilation_units.values():
@@ -134,6 +134,7 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug
                     )
                 ) == "":
                     continue
+
 
                 src_map = source_unit.srcmap_runtime(contract_name)
                 references = get_referenced_sources(src_map)
@@ -186,7 +187,15 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug
                     bytecode=HexBytes(runtime_bytecode),
                 )
 
-                contracts.append((src, bytecode, yul_ir))
+                if hex_init_code := source_unit.bytecode_init(contract_name):
+                    init_code = ContractInitCode(
+                        md5_bytecode=HexBytes(md5_bytecode),
+                        init_code=HexBytes(bytes.fromhex(hex_init_code)),
+                    )
+                else:
+                    init_code = None
+
+                contracts.append((src, bytecode, yul_ir, init_code))
 
     return contracts
 
