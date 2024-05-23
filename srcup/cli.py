@@ -18,7 +18,7 @@ from typing import Optional, cast
 from srcup.api import create_project, update_project, get_org_entity_id, extract_organization_from_name
 from srcup.build import ExtraFieldsOfSourceUnit, compile_build
 from srcup.extract import process
-from srcup.models import BuildSystem, ContractBytecode, ContractSource, YulIRCode
+from srcup.models import BuildSystem, ContractBytecode, ContractInitCode, ContractSource, YulIRCode
 from srcup.utils import get_latest_app_version, version_callback, __version__
 
 
@@ -75,10 +75,11 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
     sources: list[ContractSource] = []
     bytecodes: list[ContractBytecode] = []
     yul_ir: list[YulIRCode | None] = []
+    init_code: list[ContractInitCode | None] = []
 
     if len(contracts):
-        sources, bytecodes, yul_ir = cast(
-            tuple[list[ContractSource], list[ContractBytecode], list[YulIRCode | None]], tuple(zip(*contracts))
+        sources, bytecodes, yul_ir, init_code = cast(
+            tuple[list[ContractSource], list[ContractBytecode], list[YulIRCode | None], list[ContractInitCode | None]], tuple(zip(*contracts))
         )
     else:
         print("WARNING: Discovered 0 contracts -- are you using non-default build output directories?")
@@ -106,6 +107,7 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
                 sources,
                 bytecodes,
                 yul_ir,
+                init_code,
                 git_hash,
                 organization,
                 entity_id,
@@ -115,7 +117,7 @@ async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOf
                 f"Successfully created project #{project_id} with version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
         else:
-            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, git_hash, {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info})
+            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, init_code, git_hash, {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info})
             print(
                 f"Successfully updated project #{project_id} with new version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
