@@ -97,8 +97,8 @@ async def asingle(
             tuple[list[ContractSource], list[ContractBytecode], list[YulIRCode | None], list[ContractInitCode | None]], tuple(zip(*contracts))
         )
     else:
-        print("WARNING: Discovered 0 contracts -- are you using non-default build output directories?")
-        sources, bytecodes, yul_ir = [], [], []
+        print("WARNING: Discovered 0 contracts -- are you pointing srcup to the right directory? Aborting upload...")
+        return
 
     git_hash = await calc_hash(bytecodes, target)
 
