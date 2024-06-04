@@ -44,6 +44,7 @@ def single(
     app_version: bool = typer.Option(False, '--version', '-v', help="Show the version of the app", is_eager=True, callback=version_callback),
     use_ir: bool = typer.Option(False, help="Analyse Yul-IR instead of EVM bytecode"),
     debug_info: bool = typer.Option(True, help="Extract debug info from the build artifacts. This can help recover some high-level names."),
+    init_code: bool = typer.Option(False, help="Extract the init code from the build artifacts."),
 ):
     latest_app_version = asyncio.run(get_latest_app_version())
     if not latest_app_version:
@@ -58,7 +59,7 @@ def single(
     try:
         target = os.path.abspath(target)
         build, extra_fields, *_ = compile_build(target, use_ir, debug_info, framework, cache, "lzma")
-        asyncio.run(asingle(build, extra_fields, use_ir, debug_info, api_url, api_key, init, organization, owner_username, name, comment, target))
+        asyncio.run(asingle(build, extra_fields, use_ir, debug_info, init_code, api_url, api_key, init, organization, owner_username, name, comment, target))
     except InvalidCompilation as e:
         print(f"Unable to perform compilation.\n")
         print("""
@@ -69,8 +70,22 @@ def single(
         sys.exit(-1)
 
 
-async def asingle(artifact: CryticCompile, extra_fields: dict[str, ExtraFieldsOfSourceUnit], use_ir: bool, get_debug_info: bool, api_url: str, api_key: str,  init: bool, organization: str, owner_username: str, name: str, comment: str, target: str):
-    contracts = process(artifact, extra_fields, use_ir, get_debug_info)
+async def asingle(
+    artifact: CryticCompile,
+    extra_fields: dict[str, ExtraFieldsOfSourceUnit],
+    use_ir: bool,
+    get_debug_info: bool,
+    get_init_code: bool,
+    api_url: str,
+    api_key: str,
+    init: bool,
+    organization: str,
+    owner_username: str,
+    name: str,
+    comment: str,
+    target: str
+):
+    contracts = process(artifact, extra_fields, use_ir, get_debug_info, get_init_code)
 
     sources: list[ContractSource] = []
     bytecodes: list[ContractBytecode] = []

@@ -265,7 +265,7 @@ test = ["pytest", "pytest-cov"]
 type = "git"
 url = "git@github.com:Dedaub/crytic-compile.git"
 reference = "master"
-resolved_reference = "da50d6fec7caca478cbf2fd6468a16348c7e4345"
+resolved_reference = "faaa19bd04e3844ba94bc4e5d46cb23fbccde85e"
 
 [[package]]
 name = "eth-hash"
