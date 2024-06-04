@@ -210,7 +210,7 @@ def process(
                             init_code=HexBytes(init_code_bytes),
                         )
                     except ValueError:
-                        print(f"Malformed init code for {md5_bytecode.hex()}")
+                        print(f"WARNING: Malformed init code for {src.contract_path}: {src.contract_name}")
 
                 contracts.append((src, bytecode, yul_ir, init_code))
 
