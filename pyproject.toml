@@ -6,8 +6,8 @@ authors = ["Tony Rocco Valentine <tvalentine@dedaub.com>", "Ilias Tsatiris <ilia
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
-crytic-compile = "^0.3.1"
+python = ">=3.10,<3.12.0 || >3.12.0,<4"
+crytic-compile = { git = "git@github.com:Dedaub/crytic-compile.git", branch = "master"}
 typer = {extras = ["all"], version = "^0.7.0"}
 eth-hash = {extras = ["pycryptodome"], version = "^0.5.1"}
 python-dotenv = "^0.21.0"
