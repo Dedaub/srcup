@@ -68,7 +68,15 @@ def generate_remapping(references: list[str], file_ids: set[str]) -> dict[str, s
         )
     }
 
-def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug_info: bool) -> tuple[dict | None, dict | None, YulIRCode | None]:
+def extract_extra_fields(
+    md5_bytecode: bytes,
+    contract_name: str,
+    source_unit,
+    artifact: CryticCompile,
+    extra_fields: dict,
+    use_ir: bool,
+    get_debug_info: bool,
+) -> tuple[dict | None, dict | None, YulIRCode | None]:
     im_ref, debug_info, yul_ir = None, None, None
 
     if not get_debug_info and not use_ir:
@@ -120,8 +128,14 @@ def extract_extra_fields(md5_bytecode: bytes, contract_name: str, source_unit, a
 
 
 
-def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug_info: bool) -> list[tuple[ContractSource, ContractBytecode, YulIRCode | None, ContractInitCode | None]]:
-    contracts: list[tuple[ContractSource, ContractBytecode, YulIRCode | None]] = []
+def process(
+    artifact: CryticCompile,
+    extra_fields: dict,
+    use_ir: bool,
+    get_debug_info: bool,
+    get_init_code: bool
+) -> list[tuple[ContractSource, ContractBytecode, YulIRCode | None, ContractInitCode | None]]:
+    contracts: list[tuple[ContractSource, ContractBytecode, YulIRCode | None, ContractInitCode | None]] = []
 
     for comp_unit in artifact.compilation_units.values():
         file_mapping = create_file_mapping(comp_unit)
@@ -187,13 +201,16 @@ def process(artifact: CryticCompile, extra_fields: dict, use_ir: bool, get_debug
                     bytecode=HexBytes(runtime_bytecode),
                 )
 
-                if hex_init_code := source_unit.bytecode_init(contract_name):
-                    init_code = ContractInitCode(
-                        md5_bytecode=HexBytes(md5_bytecode),
-                        init_code=HexBytes(bytes.fromhex(hex_init_code)),
-                    )
-                else:
-                    init_code = None
+                init_code = None
+                if get_init_code and (hex_init_code := source_unit.bytecode_init(contract_name)):
+                    try:
+                        init_code_bytes = bytes.fromhex(hex_init_code)
+                        init_code = ContractInitCode(
+                            md5_bytecode=HexBytes(md5_bytecode),
+                            init_code=HexBytes(init_code_bytes),
+                        )
+                    except ValueError:
+                        print(f"Malformed init code for {md5_bytecode.hex()}")
 
                 contracts.append((src, bytecode, yul_ir, init_code))
 
