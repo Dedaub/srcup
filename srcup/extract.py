@@ -30,9 +30,15 @@ def create_file_mapping(comp_unit: CompilationUnit) -> dict[str, SourceUnit]:
     files: dict[str, SourceUnit] = {}
     for source_unit in comp_unit.source_units.values():
         if comp_unit.compiler_version.compiler == "vyper":
-            file_id = source_unit.ast["ast"]["body"][0]["src"].split(":")[2]
+            base = source_unit.ast["ast"]["body"][0].get("src")
         else:
-            file_id = source_unit.ast["src"].split(":")[2]
+            base = source_unit.ast.get("src")
+
+        if base is None:
+            print(f"No AST found for source unit: {source_unit.filename.absolute}")
+            continue
+
+        file_id = base.split(":")[2]
         files[file_id] = source_unit
     return files
 

@@ -83,7 +83,7 @@ def compile_build(
                     f.write(content)
 
     extra_fields: dict[str, ExtraFieldsOfSourceUnit] = {}
-    kwargs: dict[str, Any] = {"ignore_compile": use_cached_build}
+    kwargs: dict[str, Any] = {"ignore_compile": use_cached_build, "foundry_compile_all": True}
     if framework:
         kwargs["compile_force_framework"] = framework.value
 
