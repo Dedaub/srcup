@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
 import asyncio
-import builtins
 import os
 import pathlib
-import rich
 import sys
 import typer
 from crytic_compile import InvalidCompilation
 
 from crytic_compile.crytic_compile import CryticCompile
 from hashlib import sha1
-from packaging import version
 from subprocess import Popen, PIPE, TimeoutExpired
 from typing import Optional, cast
 
@@ -19,11 +16,10 @@ from srcup.api import create_project, update_project, get_org_entity_id, extract
 from srcup.build import ExtraFieldsOfSourceUnit, compile_build
 from srcup.extract import process
 from srcup.models import BuildSystem, ContractBytecode, ContractInitCode, ContractSource, YulIRCode
-from srcup.utils import get_latest_app_version, version_callback, __version__
+from srcup.utils import version_callback, __version__
 
 
 app = typer.Typer()
-builtins.print = rich.print  # type: ignore
 
 
 @app.command()
@@ -46,16 +42,6 @@ def single(
     debug_info: bool = typer.Option(True, help="Extract debug info from the build artifacts. This can help recover some high-level names."),
     init_code: bool = typer.Option(False, help="Extract the init code from the build artifacts."),
 ):
-    latest_app_version = asyncio.run(get_latest_app_version())
-    if not latest_app_version:
-        print("Warning: Failed to retrieve the latest available version of the app")
-
-    elif version.parse(__version__) < version.parse(latest_app_version):
-        print(f"Warning: A new version is available ({latest_app_version})\n")
-        print("It's recommended that you upgrade to the latest version to get the latest features and bugfixes:")
-        print("  For pipx installation run:      pipx upgrade srcup")
-        print("  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup")
-
     try:
         target = os.path.abspath(target)
         build, extra_fields, *_ = compile_build(target, use_ir, debug_info, framework, cache, "lzma")
