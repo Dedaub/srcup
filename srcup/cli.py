@@ -91,11 +91,11 @@ async def asingle(
     if not name:
         name = pathlib.Path(target).resolve().name
 
+    if not organization:
+        organization, name = extract_organization_from_name(name)
+
     try:
         if init:
-            if not organization:
-                organization, name = extract_organization_from_name(name)
-
             entity_id: int | None = None
             if organization:
                 entity_id = await get_org_entity_id(api_url, api_key, organization)
@@ -118,7 +118,7 @@ async def asingle(
                 f"Successfully created project #{project_id} with version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
         else:
-            project_id, version_sequence = await update_project(api_url, api_key, owner_username, name, comment, sources, bytecodes, yul_ir, init_code, git_hash, {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info})
+            project_id, version_sequence = await update_project(api_url, api_key, owner_username or organization, name, comment, sources, bytecodes, yul_ir, init_code, git_hash, {"use_ir": use_ir, "build_system": artifact.platform.NAME, "debug_info": get_debug_info})
             print(
                 f"Successfully updated project #{project_id} with new version {version_sequence}: https://app.dedaub.com/projects/{project_id}_{version_sequence}"
             )
