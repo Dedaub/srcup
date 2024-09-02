@@ -263,7 +263,7 @@ test = ["pytest", "pytest-cov"]
 
 [package.source]
 type = "git"
-url = "git@github.com:Dedaub/crytic-compile.git"
+url = "https://github.com/Dedaub/crytic-compile.git"
 reference = "master"
 resolved_reference = "faaa19bd04e3844ba94bc4e5d46cb23fbccde85e"
 
@@ -931,4 +931,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12.0 || >3.12.0,<4"
-content-hash = "39afe9349badffe288cdb1ca1f004dfdb2401bf927ba3c25a177ed9f188299ba"
+content-hash = "9dd16664f8d0cf24ccce466081f523804ff048ed7ff9162c97d9cef7a2643aab"
