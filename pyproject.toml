@@ -9,6 +9,7 @@ readme = "README.md"
 python = ">=3.10,<3.12.0 || >3.12.0,<4"
 crytic-compile = { git = "https://github.com/Dedaub/crytic-compile.git", branch = "master"}
 typer = {extras = ["all"], version = "^0.7.0"}
+click = { version = "8.1.7" }
 eth-hash = {extras = ["pycryptodome"], version = "^0.5.1"}
 python-dotenv = "^0.21.0"
 pydantic = "^2.5.3"
