@@ -47,5 +47,5 @@ def check_version():
     elif version.parse(__version__) < version.parse(latest_app_version):
         print(f"Warning: A new version is available ({latest_app_version})\n")
         print("It's recommended that you upgrade to the latest version to get the latest features and bugfixes:")
-        print("  For pipx installation run:      pipx upgrade srcup")
-        print("  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup")
+        print("  For uv tool installation run:   uv tool upgrade srcup")
+        print("  For plain pip installation run: pip install --upgrade git+https://github.com/Dedaub/srcup")

@@ -4,25 +4,25 @@
 
 ## Installation
 
-**NOTE**: While `pipx` is not required, it's highly recommended to use it instead of `pip` to ensure our
+**NOTE**: While `uv` is not required, it's highly recommended to use `uv tool` instead of `pip` to ensure our
 CLI tool is run in an isolated/clean environment. 
 
-1. [Optional] [Install pipx](https://pypa.github.io/pipx/). This is **recommended**.
-2. Install the CLI tool: `pipx install git+https://github.com/Dedaub/srcup#egg=srcup`
+1. [Optional] [Install uv](https://docs.astral.sh/uv/). This is **recommended**.
+2. Install the CLI tool: `uv tool install git+https://github.com/Dedaub/srcup`
 3. Test the installation: `srcup --help`
 4. [Optional] Install the CLI completions: `srcup --install-completion`
 
 
 ## Upgrading
 
-### For pipx installation
+### For uv tool installation
 ```bash
-pipx upgrade srcup
+uv tool upgrade srcup
 ```
 
 ### For plain pip installation
 ```bash
-pip install --upgrade git+https://github.com/Dedaub/srcup#egg=srcup
+pip install --upgrade git+https://github.com/Dedaub/srcup
 ```
 
 ## Usage

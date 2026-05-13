@@ -1,30 +1,40 @@
-[tool.poetry]
+[project]
 name = "srcup"
 version = "0.4.17"
 description = ""
-authors = ["Tony Rocco Valentine <tvalentine@dedaub.com>", "Ilias Tsatiris <ilias@dedaub.com>"]
 readme = "README.md"
+requires-python = ">=3.10,<4"
+authors = [
+    { name = "Tony Rocco Valentine", email = "tvalentine@dedaub.com" },
+    { name = "Ilias Tsatiris", email = "ilias@dedaub.com" },
+]
+dependencies = [
+    "aiohttp>=3.8.5,<4",
+    "crytic-compile",
+    "eth-hash[pycryptodome]>=0.8.0,<1.0",
+    "packaging>=24,<26",
+    "pydantic>=2.5.3,<3",
+    "python-dotenv>=1.2.0,<2",
+    "typer[all]>=0.25.0,<0.26",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.12.0 || >3.12.0,<4"
-crytic-compile = { git = "https://github.com/Dedaub/crytic-compile.git", branch = "master"}
-typer = {extras = ["all"], version = "^0.7.0"}
-click = { version = "8.1.7" }
-eth-hash = {extras = ["pycryptodome"], version = "^0.5.1"}
-python-dotenv = "^0.21.0"
-pydantic = "^2.5.3"
-aiohttp = "^3.8.5"
+[project.scripts]
+srcup = "srcup.__main__:main"
 
-[tool.poetry.group.dev.dependencies]
-mypy = "^0.991"
+[dependency-groups]
+dev = [
+    "mypy>=0.991,<1",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+packages = ["srcup"]
 
-[tool.poetry.scripts]
-srcup = "srcup.__main__:main"
+[tool.uv.sources]
+crytic-compile = { git = "https://github.com/Dedaub/crytic-compile.git", branch = "master" }
 
 
 [tool.pyright]

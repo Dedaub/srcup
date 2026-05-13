@@ -7,4 +7,5 @@
 **/info/**
 **/__pycache__/**
 **/.vscode/**
+**/.venv/**
 */venv/
